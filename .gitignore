@@ -1,0 +1,20 @@
+# Ignorar node_modules
+node_modules/
+
+# Ignorar archivos de entorno
+.env
+.env.local
+
+# Ignorar archivos de configuración de Firebase
+firebase-config.js
+
+# Ignorar archivos de IDE
+.vscode/
+.idea/
+
+# Ignorar archivos de compilación
+dist/
+build/
+
+# Ignorar archivos de sistema
+.DS_Store
