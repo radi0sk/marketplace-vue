@@ -1,0 +1,10 @@
+/* toast.css */
+.Vue-Toastification__toast--success {
+    background-color: #4CAF50;
+    font-family: 'Arial', sans-serif;
+    border-radius: 12px;
+  }
+  
+  .Vue-Toastification__toast-body {
+    font-size: 15px;
+  }

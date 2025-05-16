@@ -1,43 +1,59 @@
 <template>
-    <div class="product-detail">
-      <h2>{{ product.name }}</h2>
-      <img :src="product.image" :alt="product.name" class="product-image" />
-      <p class="product-description">{{ product.description }}</p>
-      <p class="product-price">${{ product.price }}</p>
-      <button @click="addToCart" class="add-to-cart-button">Agregar al Carrito</button>
-    </div>
-  </template>
-  
-  <script>
-  import { db } from "@/firebase";
-  import { doc, getDoc } from "firebase/firestore";
-  
-  export default {
-    name: "ClienteProductDetail",
-    data() {
-      return {
-        product: {},
-      };
-    },
-    async created() {
+  <div class="product-detail">
+    <h2>{{ product.name }}</h2>
+    <img :src="product.image" :alt="product.name" class="product-image" />
+    <p class="product-description">{{ product.description }}</p>
+    <p class="product-price">${{ product.price }}</p>
+    <button @click="addToCart" class="add-to-cart-button">Agregar al Carrito</button>
+  </div>
+</template>
+
+<script>
+import { db } from "@/services/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { useToast } from "vue-toastification";
+
+export default {
+  name: "ClienteProductDetail",
+  data() {
+    return {
+      product: {},
+    };
+  },
+  setup() {
+    const toast = useToast();
+    return { toast };
+  },
+  async created() {
+    try {
       const productId = this.$route.params.id;
       const docRef = doc(db, "products", productId);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         this.product = { id: docSnap.id, ...docSnap.data() };
       } else {
-        console.log("Producto no encontrado");
+        this.toast.error("Producto no encontrado");
+      }
+    } catch (error) {
+      this.toast.error("Error al cargar el producto");
+      console.error("Error fetching product:", error);
+    }
+  },
+  methods: {
+    addToCart() {
+      if (this.$store) {
+        this.$store.dispatch("addToCart", this.product);
+        this.toast.success(`${this.product.name} agregado al carrito`);
+      } else {
+        this.toast.error("Error al agregar al carrito");
+        console.error("Vuex store no está disponible.");
       }
     },
-    methods: {
-      addToCart() {
-        // Lógica para agregar al carrito
-        this.$store.dispatch("addToCart", this.product);
-      },
-    },
-  };
-  </script>
-  
+  },
+};
+</script>
+
+
   <style scoped>
   .product-detail {
     padding: 1rem;

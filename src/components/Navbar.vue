@@ -1,55 +1,106 @@
 <template>
   <nav class="navbar">
     <div class="navbar-brand">
-      <router-link to="/" class="navbar-logo">Marketplace</router-link>
+      <router-link to="/">Marketplace</router-link>
     </div>
-    <ul class="navbar-links">
-      <!-- Enlaces para todos los usuarios -->
-      <li>
-        <router-link to="/" class="navbar-link">Inicio</router-link>
-      </li>
-      <li>
-        <router-link to="/cart" class="navbar-link">Carrito</router-link>
-      </li>
+    <div class="navbar-menu">
+      <!-- Opciones para usuarios no autenticados -->
+      <div class="navbar-item" v-if="!user">
+        <router-link to="/">Inicio</router-link>
+        <router-link to="/products">Productos</router-link>
+      </div>
 
-      <!-- Enlaces para vendedores -->
-      <li v-if="userRole === 'vendedor'">
-        <router-link to="/seller" class="navbar-link">Panel de Vendedor</router-link>
-      </li>
+      <!-- Carrito de compras (visible para todos) -->
+      <div class="navbar-item">
+        <router-link to="/cart">Carrito</router-link>
+      </div>
 
-      <!-- Enlaces para mayoristas -->
-      <li v-if="userRole === 'mayorista'">
-        <router-link to="/wholesale" class="navbar-link">Mayorista</router-link>
-      </li>
+      <!-- Opciones para usuarios autenticados -->
+      <div class="navbar-item" v-if="user">
+        <div class="user-panel" @click="toggleDropdown">
+          <img :src="user.photoURL" alt="User Photo" class="user-photo" />
+          <span>{{ user.displayName }}</span>
+          <i class="fas fa-caret-down"></i>
+        </div>
+        <div v-if="isDropdownOpen" class="dropdown-menu">
+          <!-- Opciones comunes para todos los usuarios autenticados -->
+          <router-link to="/profile" class="dropdown-item">Perfil</router-link>
+          <router-link to="/purchase-history" class="dropdown-item">Historial de Compras</router-link>
+          <router-link to="/favorites" class="dropdown-item">Favoritos</router-link>
 
-      <!-- Enlace de cierre de sesión (si el usuario está autenticado) -->
-      <li v-if="isAuthenticated">
-        <a href="#" class="navbar-link" @click="logout">Cerrar Sesión</a>
-      </li>
+          <!-- Opciones solo para administradores -->
+          <router-link v-if="userRole === 'admin'" to="/admin" class="dropdown-item">Admin</router-link>
+          <router-link v-if="userRole === 'admin'" to="ProductManagement" class="dropdown-item">Gestionar Productos</router-link>
 
-      <!-- Enlace de inicio de sesión (si el usuario no está autenticado) -->
-      <li v-else>
-        <router-link to="/login" class="navbar-link">Iniciar Sesión</router-link>
-      </li>
-    </ul>
+          <!-- Cerrar sesión -->
+          <button @click="logout" class="dropdown-item">Cerrar Sesión</button>
+        </div>
+      </div>
+
+      <!-- Enlace de inicio de sesión para usuarios no autenticados -->
+      <div class="navbar-item" v-if="!user">
+        <router-link to="/login">Iniciar Sesión</router-link>
+      </div>
+    </div>
   </nav>
 </template>
 
 <script>
+import { auth, db } from "@/services/firebase";
+import { signOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+
 export default {
   name: "AppNavbar",
   data() {
     return {
-      userRole: "cliente", // Puedes cambiar esto dinámicamente según el rol del usuario
-      isAuthenticated: false, // Puedes cambiar esto dinámicamente según el estado de autenticación
+      user: null,
+      userRole: null,
+      isDropdownOpen: false,
     };
   },
+  async created() {
+    auth.onAuthStateChanged(async (user) => {
+      this.user = user;
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            this.userRole = userDoc.data().role;
+            this.$root.$emit('show-notification', {
+              message: `Bienvenido ${user.displayName || ''}`,
+              type: 'success'
+            });
+          }
+        } catch (error) {
+          console.error("Error al obtener rol:", error);
+          this.$root.$emit('show-notification', {
+            message: 'Error al cargar información de usuario',
+            type: 'error'
+          });
+        }
+      }
+    });
+  },
   methods: {
-    logout() {
-      // Lógica para cerrar sesión
-      this.isAuthenticated = false;
-      this.userRole = "cliente"; // Restablecer el rol
-      this.$router.push("/"); // Redirigir al inicio
+    toggleDropdown() {
+      this.isDropdownOpen = !this.isDropdownOpen;
+    },
+    async logout() {
+      try {
+        await signOut(auth);
+        this.$root.$emit('show-notification', {
+          message: 'Sesión cerrada correctamente',
+          type: 'success'
+        });
+        this.$router.push("/login");
+      } catch (error) {
+        console.error("Error al cerrar sesión:", error);
+        this.$root.$emit('show-notification', {
+          message: 'Error al cerrar sesión',
+          type: 'error'
+        });
+      }
     },
   },
 };
@@ -60,56 +111,68 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 2rem;
-  background-color: #2c3e50;
+  padding: 1rem;
+  background-color: #42b983;
   color: white;
 }
 
-.navbar-brand {
+.navbar-brand a {
+  color: white;
+  text-decoration: none;
   font-size: 1.5rem;
   font-weight: bold;
 }
 
-.navbar-logo {
-  color: white;
-  text-decoration: none;
-}
-
-.navbar-links {
+.navbar-menu {
   display: flex;
-  list-style: none;
-  margin: 0;
-  padding: 0;
+  align-items: center;
 }
 
-.navbar-links li {
-  margin-left: 1.5rem;
+.navbar-item {
+  margin-left: 1rem;
+  position: relative;
 }
 
-.navbar-link {
-  color: white;
+.user-panel {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.user-photo {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.dropdown-item {
+  display: block;
+  padding: 0.5rem 1rem;
+  color: #333;
   text-decoration: none;
-  font-size: 1rem;
 }
 
-.navbar-link:hover {
-  text-decoration: underline;
+.dropdown-item:hover {
+  background-color: #f5f5f5;
 }
 
-/* Estilos responsivos */
-@media (max-width: 768px) {
-  .navbar {
-    flex-direction: column;
-    padding: 1rem;
-  }
-
-  .navbar-links {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .navbar-links li {
-    margin: 0.5rem 0;
-  }
+button.dropdown-item {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
 }
 </style>

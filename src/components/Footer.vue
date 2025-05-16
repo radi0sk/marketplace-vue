@@ -29,9 +29,7 @@
             <li>
               <router-link to="/cart">Carrito</router-link>
             </li>
-            <li>
-              <router-link to="/seller">Panel de Vendedor</router-link>
-            </li>
+            
           </ul>
         </div>
       </div>
@@ -44,6 +42,19 @@
   <script>
   export default {
     name: "AppFooter",
+    data() {
+      return {
+        currentYear: new Date().getFullYear()
+      };
+    },
+    methods: {
+      showContactNotification() {
+        this.$root.$emit('show-notification', {
+          message: 'Pronto nos pondremos en contacto contigo',
+          type: 'info'
+        });
+      }
+    }
   };
   </script>
   
