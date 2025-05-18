@@ -2,11 +2,9 @@
   <div class="product-management">
     <div class="management-header">
       <h2><i class="fas fa-boxes"></i> Gestión de Productos</h2>
-      
-    <button @click="goToAddProduct" class="add-product-button">
-      Agregar Nuevo Producto
-    </button>
- 
+      <button @click="goToAddProduct" class="add-product-button">
+        Agregar Nuevo Producto
+      </button>
     </div>
     
     <ProductForm 
@@ -18,6 +16,7 @@
     <ProductList 
       @edit-product="handleEditProduct"
       @product-deleted="handleProductDeleted"
+      @toggle-availability="toggleProductAvailability"
     />
   </div>
 </template>
@@ -37,7 +36,6 @@ export default {
     };
   },
   methods: {
-    
     handleProductSaved(product) {
       this.showProductForm = false;
       this.$toast.success(`Producto "${product.name}" guardado correctamente`, {
@@ -46,7 +44,6 @@ export default {
     },
     handleEditProduct() {
       this.showProductForm = true;
-      // Aquí podrías emitir el evento al ProductForm para edición
     },
     goToAddProduct() {
       this.$router.push('/admin/products/add');
@@ -55,25 +52,19 @@ export default {
       this.$toast.success(`Producto "${productName}" eliminado`, {
         position: "top-center"
       });
+    },
+    toggleProductAvailability(product) {
+      // Lógica para cambiar disponibilidad del producto
+      const newStatus = product.available ? 'agotado' : 'disponible';
+      this.$toast.success(`Producto marcado como ${newStatus}`, {
+        position: "top-center"
+      });
     }
   }
 };
 </script>
 
 <style scoped>
-.add-product-button {
-  background-color: #42b983;
-  color: white;
-  padding: 10px 15px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-bottom: 20px;
-}
-
-.add-product-button:hover {
-  background-color: #369f6e;
-}
 .product-management {
   background: white;
   padding: 1.5rem;
@@ -87,7 +78,7 @@ export default {
   margin-bottom: 1.5rem;
 }
 
-.add-product-btn {
+.add-product-button {
   padding: 0.75rem 1.5rem;
   background-color: #42b983;
   color: white;
@@ -97,7 +88,7 @@ export default {
   font-size: 1rem;
 }
 
-.add-product-btn:hover {
+.add-product-button:hover {
   background-color: #3aa876;
 }
 

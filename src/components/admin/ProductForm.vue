@@ -224,14 +224,24 @@ export default {
       default: false
     }
   },
-  data() {
-    return {
-      product: JSON.parse(JSON.stringify(this.initialProduct)),
-      categories: [],
-      uploadedImages: [],
-      isSubmitting: false,
-      isDragging: false
-    };
+ data() {
+  return {
+    product: JSON.parse(JSON.stringify(this.initialProduct)),
+    categories: [],
+    uploadedImages: [],
+    isSubmitting: false,
+    isDragging: false,
+    showNewCategoryFields: false, // Añadir esta propiedad
+    newCategory: { // Añadir este objeto
+      name: '',
+      image: null
+    }
+  };
+},
+  watch: {
+    'product.category'(newVal) {
+      this.showNewCategoryFields = newVal === 'new_category';
+    }
   },
   async created() {
     try {
@@ -285,6 +295,7 @@ export default {
       URL.revokeObjectURL(this.uploadedImages[index].preview);
       this.uploadedImages.splice(index, 1);
     },
+    
     setMainImage(index) {
       this.uploadedImages.forEach((img, i) => {
         img.isMain = i === index;
@@ -293,6 +304,38 @@ export default {
       const mainImg = this.uploadedImages.splice(index, 1)[0];
       this.uploadedImages.unshift(mainImg);
     },
+     handleCategoryImageUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+      this.newCategory.image = file;
+    }
+  },
+
+  addNewCategory() {
+    if (!this.newCategory.name) {
+      this.$emit('error', 'El nombre de la categoría es requerido');
+      return;
+    }
+    
+    // Aquí deberías implementar la lógica para guardar la nueva categoría
+    // Por ejemplo, llamar a una API y luego actualizar la lista de categorías
+    
+    // Ejemplo:
+    const newCat = {
+      id: Date.now().toString(), // ID temporal
+      name: this.newCategory.name
+    };
+    
+    this.categories.push(newCat);
+    this.product.category = newCat.id;
+    this.cancelNewCategory();
+  },
+
+  cancelNewCategory() {
+    this.showNewCategoryFields = false;
+    this.newCategory = { name: '', image: null };
+    this.product.category = '';
+  },
     addFeature() {
       this.product.features.push({ name: '', value: '' });
     },
