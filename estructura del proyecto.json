@@ -1,0 +1,84 @@
+{
+  "marketplace-vue": {
+    "src": {
+      "App.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\App.vue",
+      "main.js": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\main.js",
+      "api": {
+        "orders.js": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\api\\orders.js",
+        "products.js": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\api\\products.js"
+      },
+      "assets": {
+        "logo.png": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\assets\\logo.png",
+        "toast.css": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\assets\\toast.css"
+      },
+      "components": {
+        "Confirmacion.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\components\\Confirmacion.vue",
+        "DetalleOrden.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\components\\DetalleOrden.vue",
+        "Footer.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\components\\Footer.vue",
+        "Navbar.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\components\\Navbar.vue",
+        "NotificationToast.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\components\\NotificationToast.vue",
+        "admin": {
+          "OrderList.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\components\\admin\\OrderList.vue",
+          "OrderStatusFilter.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\components\\admin\\OrderStatusFilter.vue",
+          "ProductForm.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\components\\admin\\ProductForm.vue",
+          "ProductList.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\components\\admin\\ProductList.vue"
+        },
+        "Auth": {
+          "LoginForm.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\components\\Auth\\LoginForm.vue"
+        },
+        "cliente": {
+          "ClienteCheckoutForm.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\components\\cliente\\ClienteCheckoutForm.vue",
+          "ClienteOrderSummary.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\components\\cliente\\ClienteOrderSummary.vue",
+          "ClienteProductCard.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\components\\cliente\\ClienteProductCard.vue",
+          "ClienteProductList.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\components\\cliente\\ClienteProductList.vue",
+          "ClienteShoppingCart.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\components\\cliente\\ClienteShoppingCart.vue",
+          "SearchPage.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\components\\cliente\\SearchPage.vue"
+        },
+        "mayorista": {},
+        "user": {
+          "Favorites.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\components\\user\\Favorites.vue",
+          "PurchaseHistory.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\components\\user\\PurchaseHistory.vue"
+        }
+      },
+      "router": {
+        "index.js": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\router\\index.js"
+      },
+      "services": {
+        "cloudinary.js": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\services\\cloudinary.js",
+        "emailService.js": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\services\\emailService.js",
+        "firebase.js": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\services\\firebase.js"
+      },
+      "store": {
+        "index.js": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\store\\index.js"
+      },
+      "views": {
+        "HomePage.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\views\\HomePage.vue",
+        "Pagar.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\views\\Pagar.vue",
+        "ProductsPage.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\views\\ProductsPage.vue",
+        "ShoppingCart.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\views\\ShoppingCart.vue",
+        "admin": {
+          "AddProduct.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\views\\admin\\AddProduct.vue",
+          "AdminDashboard.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\views\\admin\\AdminDashboard.vue",
+          "EditProduct.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\views\\admin\\EditProduct.vue",
+          "OrderDetail.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\views\\admin\\OrderDetail.vue",
+          "OrderManagement.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\views\\admin\\OrderManagement.vue",
+          "OutOfStockProducts.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\views\\admin\\OutOfStockProducts.vue",
+          "PopularProducts.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\views\\admin\\PopularProducts.vue",
+          "ProductManagement.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\views\\admin\\ProductManagement.vue",
+          "SalesStatistics.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\views\\admin\\SalesStatistics.vue"
+        },
+        "Auth": {
+          "LoginPage.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\views\\Auth\\LoginPage.vue"
+        },
+        "cliente": {
+          "ClienteProductDetail.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\views\\cliente\\ClienteProductDetail.vue"
+        },
+        "user": {
+          "OrderDetail.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\views\\user\\OrderDetail.vue",
+          "Profile.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\views\\user\\Profile.vue",
+          "PurchaseHistory.vue": "C:\\Users\\User\\Documents\\marketplace-vue\\src\\views\\user\\PurchaseHistory.vue"
+        }
+      }
+    }
+  }
+}

@@ -11,9 +11,10 @@ import '@/assets/toast.css';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faCartPlus, faCheckCircle, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faMoneyBillWave, faHandHoldingUsd, faUniversity } from '@fortawesome/free-solid-svg-icons'
 
 // Primero agregamos los iconos a la biblioteca de Font Awesome
-library.add(faCartPlus, faCheckCircle, faSpinner);
+library.add(faCartPlus, faCheckCircle, faSpinner, faMoneyBillWave, faHandHoldingUsd, faUniversity);
 
 // Luego creamos la aplicación
 const app = createApp(App);

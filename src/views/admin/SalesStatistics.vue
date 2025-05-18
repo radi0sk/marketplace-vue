@@ -42,10 +42,7 @@
         </div>
       </div>
       
-      <SalesChart 
-        :chart-data="chartData"
-        :period="selectedPeriod"
-      />
+     
     </div>
   </div>
 </template>
@@ -54,21 +51,7 @@
 
 
 export default {
-  components: {
-    SalesChart
-  },
-  data() {
-    return {
-      selectedPeriod: '30days',
-      loading: false,
-      totalSales: 0,
-      totalOrders: 0,
-      avgOrderValue: 0,
-      salesChange: 0,
-      ordersChange: 0,
-      chartData: {}
-    };
-  },
+
   async created() {
     await this.loadSalesData();
   },

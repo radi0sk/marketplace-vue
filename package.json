@@ -1,58 +1,99 @@
 {
-  "name": "marketplace-vue",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
-  },
-  "dependencies": {
-    "@firebase/messaging": "^0.12.17",
-    "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
-    "@fortawesome/fontawesome-svg-core": "^6.7.2",
-    "@fortawesome/free-solid-svg-icons": "^6.7.2",
-    "@fortawesome/vue-fontawesome": "^3.0.8",
-    "chart.js": "^4.4.8",
-    "cloudinary": "^2.5.1",
-    "core-js": "^3.8.3",
-    "firebase": "^11.6.0",
-    "jspdf": "^3.0.1",
-    "jspdf-autotable": "^5.0.2",
-    "vue": "^3.2.13",
-    "vue-router": "^4.5.0",
-    "vue-toastification": "^2.0.0-rc.5",
-    "vuelidate": "^0.7.7",
-    "vuex": "^4.1.0",
-    "vuex-persistedstate": "^4.1.0"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.12.16",
-    "@babel/eslint-parser": "^7.12.16",
-    "@vue/cli-plugin-babel": "~5.0.0",
-    "@vue/cli-plugin-eslint": "~5.0.0",
-    "@vue/cli-service": "~5.0.0",
-    "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^8.0.3"
-  },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true
-    },
-    "extends": [
-      "plugin:vue/vue3-essential",
-      "eslint:recommended"
-    ],
-    "parserOptions": {
-      "parser": "@babel/eslint-parser"
-    },
-    "rules": {}
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead",
-    "not ie 11"
-  ]
+  "marketplace-vue": {
+    ".env": "/marketplace-vue/.env",
+    ".firebaserc": "/marketplace-vue/.firebaserc",
+    ".gitignore": "/marketplace-vue/.gitignore",
+    "apphosting.yaml": "/marketplace-vue/apphosting.yaml",
+    "babel.config.js": "/marketplace-vue/babel.config.js",
+    "database.rules.json": "/marketplace-vue/database.rules.json",
+    "estructura del proyecto.json": "/marketplace-vue/estructura del proyecto.json",
+    "firebase.json": "/marketplace-vue/firebase.json",
+    "firestore.indexes.json": "/marketplace-vue/firestore.indexes.json",
+    "firestore.rules": "/marketplace-vue/firestore.rules",
+    "jsconfig.json": "/marketplace-vue/jsconfig.json",
+    "package-lock.json": "/marketplace-vue/package-lock.json",
+    "package.json": "/marketplace-vue/package.json",
+    "README.md": "/marketplace-vue/README.md",
+    "vue.config.js": "/marketplace-vue/vue.config.js",
+    "src": {
+      "App.vue": "/marketplace-vue/src/App.vue",
+      "main.js": "/marketplace-vue/src/main.js",
+      "api": {
+        "orders.js": "/marketplace-vue/src/api/orders.js",
+        "products.js": "/marketplace-vue/src/api/products.js"
+      },
+      "assets": {
+        "logo.png": "/marketplace-vue/src/assets/logo.png",
+        "toast.css": "/marketplace-vue/src/assets/toast.css"
+      },
+      "components": {
+        "Confirmacion.vue": "/marketplace-vue/src/components/Confirmacion.vue",
+        "DetalleOrden.vue": "/marketplace-vue/src/components/DetalleOrden.vue",
+        "Footer.vue": "/marketplace-vue/src/components/Footer.vue",
+        "Navbar.vue": "/marketplace-vue/src/components/Navbar.vue",
+        "NotificationToast.vue": "/marketplace-vue/src/components/NotificationToast.vue",
+        "admin": {
+          "OrderList.vue": "/marketplace-vue/src/components/admin/OrderList.vue",
+          "OrderStatusFilter.vue": "/marketplace-vue/src/components/admin/OrderStatusFilter.vue",
+          "ProductForm.vue": "/marketplace-vue/src/components/admin/ProductForm.vue",
+          "ProductList.vue": "/marketplace-vue/src/components/admin/ProductList.vue"
+        },
+        "Auth": {
+          "LoginForm.vue": "/marketplace-vue/src/components/Auth/LoginForm.vue"
+        },
+        "cliente": {
+          "ClienteCheckoutForm.vue": "/marketplace-vue/src/components/cliente/ClienteCheckoutForm.vue",
+          "ClienteOrderSummary.vue": "/marketplace-vue/src/components/cliente/ClienteOrderSummary.vue",
+          "ClienteProductCard.vue": "/marketplace-vue/src/components/cliente/ClienteProductCard.vue",
+          "ClienteProductList.vue": "/marketplace-vue/src/components/cliente/ClienteProductList.vue",
+          "ClienteShoppingCart.vue": "/marketplace-vue/src/components/cliente/ClienteShoppingCart.vue",
+          "SearchPage.vue": "/marketplace-vue/src/components/cliente/SearchPage.vue"
+        },
+        "mayorista": {},
+        "user": {
+          "Favorites.vue": "/marketplace-vue/src/components/user/Favorites.vue",
+          "PurchaseHistory.vue": "/marketplace-vue/src/components/user/PurchaseHistory.vue"
+        }
+      },
+      "router": {
+        "index.js": "/marketplace-vue/src/router/index.js"
+      },
+      "services": {
+        "cloudinary.js": "/marketplace-vue/src/services/cloudinary.js",
+        "emailService.js": "/marketplace-vue/src/services/emailService.js",
+        "firebase.js": "/marketplace-vue/src/services/firebase.js"
+      },
+      "store": {
+        "index.js": "/marketplace-vue/src/store/index.js"
+      },
+      "views": {
+        "HomePage.vue": "/marketplace-vue/src/views/HomePage.vue",
+        "Pagar.vue": "/marketplace-vue/src/views/Pagar.vue",
+        "ProductsPage.vue": "/marketplace-vue/src/views/ProductsPage.vue",
+        "ShoppingCart.vue": "/marketplace-vue/src/views/ShoppingCart.vue",
+        "admin": {
+          "AddProduct.vue": "/marketplace-vue/src/views/admin/AddProduct.vue",
+          "AdminDashboard.vue": "/marketplace-vue/src/views/admin/AdminDashboard.vue",
+          "EditProduct.vue": "/marketplace-vue/src/views/admin/EditProduct.vue",
+          "OrderDetail.vue": "/marketplace-vue/src/views/admin/OrderDetail.vue",
+          "OrderManagement.vue": "/marketplace-vue/src/views/admin/OrderManagement.vue",
+          "OutOfStockProducts.vue": "/marketplace-vue/src/views/admin/OutOfStockProducts.vue",
+          "PopularProducts.vue": "/marketplace-vue/src/views/admin/PopularProducts.vue",
+          "ProductManagement.vue": "/marketplace-vue/src/views/admin/ProductManagement.vue",
+          "SalesStatistics.vue": "/marketplace-vue/src/views/admin/SalesStatistics.vue"
+        },
+        "Auth": {
+          "LoginPage.vue": "/marketplace-vue/src/views/Auth/LoginPage.vue"
+        },
+        "cliente": {
+          "ClienteProductDetail.vue": "/marketplace-vue/src/views/cliente/ClienteProductDetail.vue"
+        },
+        "user": {
+          "OrderDetail.vue": "/marketplace-vue/src/views/user/OrderDetail.vue",
+          "Profile.vue": "/marketplace-vue/src/views/user/Profile.vue",
+          "PurchaseHistory.vue": "/marketplace-vue/src/views/user/PurchaseHistory.vue"
+        }
+      }
+    }
+  }
 }

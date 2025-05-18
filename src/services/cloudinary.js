@@ -7,7 +7,7 @@ const uploadImage = async (file) => {
   formData.append('cloud_name', 'dsfnladar'); // Reemplaza con tu cloud name
 
   try {
-    const response = await fetch(`https://api.cloudinary.com/v1_1/rony/image/upload`, {
+    const response = await fetch(`https://api.cloudinary.com/v1_1/dsfnladar/image/upload`, {
       method: 'POST',
       body: formData,
     });
@@ -22,7 +22,7 @@ const uploadImage = async (file) => {
 
 const deleteImage = async (publicId) => {
   try {
-    const response = await fetch(`https://api.cloudinary.com/v1_1/rony/image/destroy`, {
+    const response = await fetch(`https://api.cloudinary.com/v1_1/dsfnladar/image/destroy`, {
       method: 'POST',
       body: JSON.stringify({
         public_id: publicId,
