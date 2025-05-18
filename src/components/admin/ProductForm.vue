@@ -124,21 +124,31 @@
       </div>
     </div>
 
-    <div class="form-section">
-      <h2>Categorización</h2>
+    <div class="form-group">
+    <label for="category">Categoría Principal*</label>
+    <div class="category-selector">
+      <select v-model="product.category" id="category" required class="form-select">
+        <option value="">Selecciona una categoría</option>
+        <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+        <option value="new_category">+ Agregar nueva categoría</option>
+      </select>
+    </div>
+    
+    <div v-if="showNewCategoryFields" class="new-category-fields">
       <div class="form-group">
-        <label for="category">Categoría Principal*</label>
-        <select v-model="product.category" id="category" required class="form-select">
-          <option value="">Selecciona una categoría</option>
-          <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
-        </select>
+        <label for="newCategoryName">Nombre de la nueva categoría*</label>
+        <input v-model="newCategory.name" id="newCategoryName" required class="form-input" />
       </div>
       
       <div class="form-group">
-        <label for="tags">Etiquetas (separadas por comas)</label>
-        <input v-model="product.tags" id="tags" class="form-input" />
+        <label for="newCategoryImage">Imagen de la categoría</label>
+        <input type="file" id="newCategoryImage" @change="handleCategoryImageUpload" accept="image/*" class="form-input" />
       </div>
+      
+      <button type="button" @click="addNewCategory" class="add-btn">Guardar Categoría</button>
+      <button type="button" @click="cancelNewCategory" class="cancel-btn">Cancelar</button>
     </div>
+  </div>
 
     <div class="form-section">
       <h2>Envío y Disponibilidad</h2>
