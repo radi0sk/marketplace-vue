@@ -3,18 +3,17 @@ import { doc, getDoc, updateDoc, collection, getDocs, query, where, orderBy } fr
 
 export const getOrders = async (status = null) => {
   try {
-    let q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    let q = query(collection(db, 'ordenes'), orderBy('fecha', 'desc'));
     
-    if (status) {
-      q = query(q, where('status', '==', status));
+    if (status && status !== 'todos') {
+      q = query(q, where('estado', '==', status));
     }
     
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
-      // Asegúrate de convertir los timestamps de Firebase a Date
-      createdAt: doc.data().createdAt?.toDate() || new Date()
+      fecha: new Date(doc.data().fecha)
     }));
   } catch (error) {
     console.error('Error getting orders:', error);
@@ -24,7 +23,7 @@ export const getOrders = async (status = null) => {
 
 export const getOrderById = async (orderId) => {
   try {
-    const orderRef = doc(db, 'orders', orderId);
+    const orderRef = doc(db, 'ordenes', orderId);
     const orderSnap = await getDoc(orderRef);
     
     if (!orderSnap.exists()) {
@@ -34,8 +33,7 @@ export const getOrderById = async (orderId) => {
     return {
       id: orderSnap.id,
       ...orderSnap.data(),
-      // Convertir timestamp a Date
-      createdAt: orderSnap.data().createdAt?.toDate() || new Date()
+      fecha: orderSnap.data().fecha ? new Date(orderSnap.data().fecha) : new Date()
     };
   } catch (error) {
     console.error('Error getting order:', error);
@@ -43,10 +41,11 @@ export const getOrderById = async (orderId) => {
   }
 };
 
-export const updateOrder = async (orderId, updates) => {
+export const updateOrderStatus = async (orderId, newStatus) => {
   try {
-    const orderRef = doc(db, 'orders', orderId);
-    await updateDoc(orderRef, updates);
+    const orderRef = doc(db, 'ordenes', orderId);
+    await updateDoc(orderRef, { estado: newStatus });
+    return true;
   } catch (error) {
     console.error('Error updating order:', error);
     throw error;

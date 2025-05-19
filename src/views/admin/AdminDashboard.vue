@@ -25,8 +25,6 @@ export default {
       adminLinks: [
         { path: '/admin/products', text: 'Gestión de Productos', icon: 'fas fa-boxes' },
         { path: '/admin/orders', text: 'Gestión de Pedidos', icon: 'fas fa-clipboard-list' },
-        { path: '/admin/popular-products', text: 'Productos Populares', icon: 'fas fa-fire' },
-        { path: '/admin/out-of-stock', text: 'Productos Agotados', icon: 'fas fa-exclamation-triangle' },
         { path: '/admin/sales-statistics', text: 'Estadísticas', icon: 'fas fa-chart-line' }
       ]
     };
