@@ -45,11 +45,7 @@ const routes = [
     name: 'Search',
     component: SearchPage, // Asocia esta ruta al componente SearchPage
   },
-  {
-    path: '/ProductManagement', // Ruta de la página de gestión de productos
-    name: 'ProductManagement',
-    component: ProductManagement, // Asocia esta ruta al componente ProductManagement
-  },
+  
   {
     path: '/pagar',
     name: 'Pagar',

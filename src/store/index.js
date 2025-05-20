@@ -1,6 +1,8 @@
 // src/store/index.js
 import { createStore } from 'vuex';
 import createPersistedState from 'vuex-persistedstate';
+import { auth } from '@/services/firebase'; // Asegúrate de importar tu configuración de Firebase
+
 
 export default createStore({
   plugins: [
@@ -12,6 +14,7 @@ export default createStore({
   ],
   state: {
     cart: [], // Aquí se almacenarán los productos del carrito
+     user: null // Agregamos el estado del usuario
   },
   mutations: {
     CLEAR_CART(state) {
@@ -34,6 +37,13 @@ export default createStore({
         product.quantity = quantity;
       }
     },
+    // Nuevas mutaciones para manejar el usuario
+    SET_USER(state, user) {
+      state.user = user;
+    },
+    CLEAR_USER(state) {
+      state.user = null;
+    }
   },
   actions: {
     clearCart({ commit }) {
@@ -48,6 +58,29 @@ export default createStore({
     updateQuantity({ commit }, payload) {
       commit('UPDATE_QUANTITY', payload);
     },
+    // Nuevas acciones para manejar la autenticación
+    async fetchUser({ commit }) {
+      return new Promise((resolve) => {
+        auth.onAuthStateChanged(user => {
+          if (user) {
+            commit('SET_USER', {
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName || 'Usuario',
+              // Agrega más campos si los necesitas
+            });
+          } else {
+            commit('CLEAR_USER');
+          }
+          resolve(user);
+        });
+      });
+    },
+    async signOut({ commit }) {
+      await auth.signOut();
+      commit('CLEAR_USER');
+      commit('CLEAR_CART');
+    }
   },
   getters: {
     cartTotal(state) {
@@ -56,6 +89,9 @@ export default createStore({
     // Opcional: Getter para contar items totales
     cartItemCount(state) {
       return state.cart.reduce((count, product) => count + product.quantity, 0);
+    },
+     currentUser(state) {
+      return state.user;
     }
   },
 });

@@ -33,20 +33,37 @@
     </div>
   </div>
 </template>
-
 <script>
 import { getOrders, updateOrderStatus } from '@/api/orders';
 import OrderCard from '@/components/admin/OrderCard.vue';
+import { useToast } from "vue-toastification";
+import { mapState } from 'vuex';
 
 export default {
   components: {
     OrderCard
   },
+  setup() {
+    const toast = useToast();
+    return { toast };
+  },
+  computed: {
+    ...mapState(['user']),
+    filteredOrders() {
+      let filtered = this.orders;
+      
+      if (this.selectedStatus !== 'todos') {
+        filtered = filtered.filter(order => order.estado === this.selectedStatus);
+      }
+      
+      return filtered.sort((a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion));
+    }
+  },
   data() {
     return {
       orders: [],
       loading: true,
-      selectedStatus: 'todos',
+      selectedStatus: 'pendiente',
       statusOptions: [
         { value: 'todos', label: 'Todos los pedidos' },
         { value: 'pendiente', label: 'Pendientes' },
@@ -60,55 +77,59 @@ export default {
       ]
     };
   },
-  computed: {
-    filteredOrders() {
-      if (this.selectedStatus === 'todos') return this.orders;
-      return this.orders.filter(order => order.estado === this.selectedStatus);
-    }
-  },
   async created() {
+    await this.$store.dispatch('fetchUser');
     await this.loadOrders();
   },
   methods: {
     async loadOrders() {
       try {
         this.loading = true;
-        this.orders = await getOrders(this.selectedStatus === 'todos' ? null : this.selectedStatus);
+        let orders = await getOrders(this.selectedStatus === 'todos' ? null : this.selectedStatus);
+        this.orders = orders.sort((a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion));
       } catch (error) {
         console.error('Error loading orders:', error);
-        let errorMessage = 'Error al cargar pedidos';
-        
-        if (error instanceof Error) {
-          errorMessage = error.message;
-        } else if (error?.message) {
-          errorMessage = error.message;
-        }
-        
-        this.$toast.error(errorMessage);
+        this.toast.error(error.message || 'Error al cargar pedidos');
       } finally {
         this.loading = false;
       }
     },
     async handleStatusUpdate({ orderId, newStatus }) {
       try {
-        await updateOrderStatus(orderId, newStatus);
+        if (!this.user) {
+          throw new Error('No se pudo identificar al usuario');
+        }
+        
+        const order = this.orders.find(o => o.id === orderId);
+        if (!order) throw new Error('Pedido no encontrado');
+        
+        const cambioEstado = {
+          estadoAnterior: order.estado,
+          estadoNuevo: newStatus,
+          usuario: {
+            id: this.user.uid,
+            nombre: this.user.displayName,
+            email: this.user.email
+          },
+          fecha: new Date().toISOString()
+        };
+        
+        await updateOrderStatus(orderId, {
+          newStatus,
+          cambioEstado
+        });
+        
         await this.loadOrders();
         
-        // Notificación de éxito
-        this.$toast.success(`Estado cambiado a ${this.getStatusLabel(newStatus)}`, {
+        this.toast.success(`Estado cambiado a ${this.getStatusLabel(newStatus)}`, {
           icon: 'fas fa-check-circle'
         });
         
       } catch (error) {
         console.error('Error updating status:', error);
-        
-        // Notificación de error
-        this.$toast.error(`Error al actualizar estado: ${error.message}`, {
+        this.toast.error(`Error al actualizar estado: ${error.message}`, {
           icon: 'fas fa-exclamation-triangle'
         });
-        
-        // Revertir el cambio en el estado local si falla
-        this.loadOrders();
       }
     },
     viewOrderDetail(orderId) {

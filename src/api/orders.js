@@ -1,5 +1,15 @@
 import { db } from '@/services/firebase';
-import { doc, getDoc, updateDoc, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { 
+  doc, 
+  getDoc, 
+  collection, 
+  getDocs, 
+  query, 
+  where, 
+  orderBy,
+  runTransaction,
+  arrayUnion
+} from 'firebase/firestore';
 
 export const getOrders = async (status = null) => {
   try {
@@ -41,13 +51,25 @@ export const getOrderById = async (orderId) => {
   }
 };
 
-export const updateOrderStatus = async (orderId, newStatus) => {
+export const updateOrderStatus = async (orderId, { newStatus, cambioEstado }) => {
   try {
     const orderRef = doc(db, 'ordenes', orderId);
-    await updateDoc(orderRef, { estado: newStatus });
-    return true;
+    
+    await runTransaction(db, async (transaction) => {
+      // Actualizar el estado principal
+      transaction.update(orderRef, { 
+        estado: newStatus 
+      });
+      
+      // Agregar al historial de estados
+      transaction.update(orderRef, {
+        historialEstados: arrayUnion(cambioEstado)
+      });
+    });
+    
+    return await getDoc(orderRef);
   } catch (error) {
-    console.error('Error updating order:', error);
+    console.error('Error updating order status:', error);
     throw error;
   }
 };
