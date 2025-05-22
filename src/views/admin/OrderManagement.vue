@@ -19,12 +19,12 @@
     </div>
     
     <div v-else class="order-container">
-      <div v-if="filteredOrders.length === 0" class="empty-message">
+      <div v-if="orders.length === 0" class="empty-message">
         No hay pedidos con el filtro seleccionado
       </div>
       
       <OrderCard
-        v-for="order in filteredOrders"
+        v-for="order in orders"
         :key="order.id"
         :order="order"
         @status-updated="handleStatusUpdate"
@@ -33,11 +33,11 @@
     </div>
   </div>
 </template>
+
 <script>
 import { getOrders, updateOrderStatus } from '@/api/orders';
 import OrderCard from '@/components/admin/OrderCard.vue';
 import { useToast } from "vue-toastification";
-import { mapState } from 'vuex';
 
 export default {
   components: {
@@ -46,18 +46,6 @@ export default {
   setup() {
     const toast = useToast();
     return { toast };
-  },
-  computed: {
-    ...mapState(['user']),
-    filteredOrders() {
-      let filtered = this.orders;
-      
-      if (this.selectedStatus !== 'todos') {
-        filtered = filtered.filter(order => order.estado === this.selectedStatus);
-      }
-      
-      return filtered.sort((a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion));
-    }
   },
   data() {
     return {
@@ -77,31 +65,57 @@ export default {
       ]
     };
   },
+  computed: {
+    user() {
+      console.log('[OrderManagement] Accediendo al usuario desde Vuex:', this.$store.state.user);
+      return this.$store.state.user;
+    }
+  },
   async created() {
-    await this.$store.dispatch('fetchUser');
-    await this.loadOrders();
+    console.log('[OrderManagement] Componente creado - Iniciando carga de datos');
+    try {
+      await this.$store.dispatch('fetchUser');
+      console.log('[OrderManagement] Usuario cargado:', this.user);
+      await this.loadOrders();
+    } catch (error) {
+      console.error('[OrderManagement] Error en created:', error);
+    }
   },
   methods: {
     async loadOrders() {
+      console.log('[OrderManagement] Cargando órdenes con estado:', this.selectedStatus);
       try {
         this.loading = true;
-        let orders = await getOrders(this.selectedStatus === 'todos' ? null : this.selectedStatus);
-        this.orders = orders.sort((a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion));
+        const status = this.selectedStatus === 'todos' ? null : this.selectedStatus;
+        const orders = await getOrders(status) || [];
+        console.log('[OrderManagement] Órdenes obtenidas:', orders.length);
+        this.orders = orders;
       } catch (error) {
-        console.error('Error loading orders:', error);
+        console.error('[OrderManagement] Error al cargar pedidos:', error);
         this.toast.error(error.message || 'Error al cargar pedidos');
+        this.orders = [];
       } finally {
         this.loading = false;
+        console.log('[OrderManagement] Carga de órdenes completada');
       }
     },
     async handleStatusUpdate({ orderId, newStatus }) {
+      console.log('[OrderManagement] Iniciando actualización de estado:', { orderId, newStatus });
       try {
+        console.log('[OrderManagement] Usuario actual:', this.user);
+        
         if (!this.user) {
-          throw new Error('No se pudo identificar al usuario');
+          const errorMsg = 'No se pudo identificar al usuario';
+          console.error('[OrderManagement] ' + errorMsg);
+          throw new Error(errorMsg);
         }
         
         const order = this.orders.find(o => o.id === orderId);
-        if (!order) throw new Error('Pedido no encontrado');
+        if (!order) {
+          const errorMsg = 'Pedido no encontrado';
+          console.error('[OrderManagement] ' + errorMsg);
+          throw new Error(errorMsg);
+        }
         
         const cambioEstado = {
           estadoAnterior: order.estado,
@@ -114,39 +128,31 @@ export default {
           fecha: new Date().toISOString()
         };
         
+        console.log('[OrderManagement] Cambio de estado a registrar:', cambioEstado);
+        
         await updateOrderStatus(orderId, {
           newStatus,
           cambioEstado
         });
         
+        console.log('[OrderManagement] Estado actualizado, recargando órdenes...');
         await this.loadOrders();
         
-        this.toast.success(`Estado cambiado a ${this.getStatusLabel(newStatus)}`, {
-          icon: 'fas fa-check-circle'
-        });
-        
+        const successMsg = `Estado cambiado a ${this.getStatusLabel(newStatus)}`;
+        console.log('[OrderManagement] ' + successMsg);
+        this.toast.success(successMsg);
       } catch (error) {
-        console.error('Error updating status:', error);
-        this.toast.error(`Error al actualizar estado: ${error.message}`, {
-          icon: 'fas fa-exclamation-triangle'
-        });
+        console.error('[OrderManagement] Error updating status:', error);
+        this.toast.error(`Error al actualizar estado: ${error.message}`);
       }
     },
     viewOrderDetail(orderId) {
+      console.log('[OrderManagement] Navegando a detalle de orden:', orderId);
       this.$router.push({ name: 'OrderDetail', params: { id: orderId } });
     },
     getStatusLabel(status) {
-      const statusMap = {
-        pendiente: 'Pendiente',
-        procesando: 'Procesando',
-        verificado: 'Verificado',
-        empacado: 'Empacado',
-        enviado: 'Enviado',
-        entregado: 'Entregado',
-        completado: 'Completado',
-        cancelado: 'Cancelado'
-      };
-      return statusMap[status] || status;
+      const option = this.statusOptions.find(opt => opt.value === status);
+      return option ? option.label : status;
     }
   }
 };

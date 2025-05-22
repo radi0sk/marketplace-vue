@@ -28,14 +28,14 @@
           <p><strong>Teléfono:</strong> {{ order.cliente.telefono || 'No proporcionado' }}</p>
         </div>
         
-       <div class="meta-section">
-  <h3><i class="fas fa-truck"></i> Información de Envío</h3>
-  <p><strong>Dirección:</strong> {{ order.direccion?.direccion || 'No proporcionada' }}</p>
-  <p><strong>Ciudad:</strong> {{ order.direccion?.ciudad || 'No proporcionada' }}</p>
-  <p><strong>Departamento:</strong> {{ order.direccion?.departamento || 'No proporcionado' }}</p>
-  <p><strong>Código Postal:</strong> {{ order.direccion?.codigoPostal || 'No proporcionado' }}</p>
-  <p><strong>Tiempo de entrega:</strong> {{ order.tiempoEntrega }} días</p>
-</div>
+        <div class="meta-section">
+          <h3><i class="fas fa-truck"></i> Información de Envío</h3>
+          <p><strong>Dirección:</strong> {{ order.direccion?.direccion || 'No proporcionada' }}</p>
+          <p><strong>Ciudad:</strong> {{ order.direccion?.ciudad || 'No proporcionada' }}</p>
+          <p><strong>Departamento:</strong> {{ order.direccion?.departamento || 'No proporcionado' }}</p>
+          <p><strong>Código Postal:</strong> {{ order.direccion?.codigoPostal || 'No proporcionado' }}</p>
+          <p><strong>Tiempo de entrega:</strong> {{ order.tiempoEntrega }} días</p>
+        </div>
         
         <div class="meta-section">
           <h3><i class="fas fa-money-bill-wave"></i> Información de Pago</h3>
@@ -81,6 +81,24 @@
           <span>Q{{ order.total.toFixed(2) }}</span>
         </div>
       </div>
+
+      <!-- Sección de historial de estados -->
+      <div class="status-history" v-if="order.historialEstados && order.historialEstados.length > 0">
+        <h3><i class="fas fa-history"></i> Historial de Estados</h3>
+        <div class="history-list">
+          <div v-for="(change, index) in order.historialEstados" :key="index" class="history-item">
+            <div class="history-header">
+              <span class="history-date">{{ formatDate(change.fecha) }}</span>
+              <span class="history-user">{{ change.usuario.nombre }} ({{ change.usuario.email }})</span>
+            </div>
+            <div class="history-change">
+              <span class="old-status">{{ getStatusLabel(change.estadoAnterior) }}</span>
+              <i class="fas fa-arrow-right"></i>
+              <span class="new-status">{{ getStatusLabel(change.estadoNuevo) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
       
       <div class="order-actions">
         <select v-model="newStatus" @change="updateStatus" class="status-select">
@@ -103,6 +121,7 @@
 
 <script>
 import { getOrderById, updateOrderStatus } from '@/api/orders';
+import { useToast } from "vue-toastification";
 
 export default {
   props: {
@@ -110,6 +129,10 @@ export default {
       type: String,
       required: true
     }
+  },
+  setup() {
+    const toast = useToast();
+    return { toast };
   },
   data() {
     return {
@@ -119,39 +142,99 @@ export default {
       newStatus: ''
     };
   },
+  computed: {
+    user() {
+      console.log('[OrderDetail] Accediendo al usuario desde Vuex:', this.$store.state.user);
+      return this.$store.state.user;
+    }
+  },
   async created() {
-    await this.loadOrder();
+    console.log('[OrderDetail] Componente creado - Iniciando carga de datos');
+    try {
+      await this.$store.dispatch('fetchUser');
+      console.log('[OrderDetail] Usuario cargado:', this.user);
+      await this.loadOrder();
+    } catch (error) {
+      console.error('[OrderDetail] Error en created:', error);
+      this.error = 'Error al cargar los datos del pedido';
+    }
   },
   methods: {
-  async loadOrder() {
-  try {
-    this.loading = true;
-    this.order = await getOrderById(this.id);
-    
-    // Asegurar que la dirección exista
-    if (!this.order.direccion) {
-      this.order.direccion = {
-        direccion: 'No proporcionada',
-        ciudad: 'No proporcionada',
-        departamento: 'No proporcionado',
-        codigoPostal: 'No proporcionado'
-      };
-    }
-    
-    this.newStatus = this.order.estado;
-  } catch (error) {
-    this.error = 'Error al cargar el pedido: ' + error.message;
-  } finally {
-    this.loading = false;
-  }
-},
-    async updateStatus() {
+    async loadOrder() {
+      console.log('[OrderDetail] Cargando orden con ID:', this.id);
       try {
-        await updateOrderStatus(this.id, this.newStatus);
-        this.order.estado = this.newStatus;
-        this.$toast.success('Estado del pedido actualizado');
+        this.loading = true;
+        this.order = await getOrderById(this.id);
+        
+        console.log('[OrderDetail] Orden cargada:', this.order);
+        
+        // Asegurar que la dirección exista
+        if (!this.order.direccion) {
+          console.log('[OrderDetail] Dirección no encontrada, asignando valores por defecto');
+          this.order.direccion = {
+            direccion: 'No proporcionada',
+            ciudad: 'No proporcionada',
+            departamento: 'No proporcionado',
+            codigoPostal: 'No proporcionado'
+          };
+        }
+
+        // Verificar historial de estados
+        if (!this.order.historialEstados) {
+          console.log('[OrderDetail] No se encontró historial de estados, inicializando array vacío');
+          this.order.historialEstados = [];
+        } else {
+          console.log('[OrderDetail] Historial de estados encontrado:', this.order.historialEstados.length, 'registros');
+        }
+        
+        this.newStatus = this.order.estado;
+        console.log('[OrderDetail] Estado actual:', this.newStatus);
       } catch (error) {
-        this.$toast.error('Error al actualizar estado: ' + error.message);
+        console.error('[OrderDetail] Error al cargar el pedido:', error);
+        this.error = 'Error al cargar el pedido: ' + error.message;
+      } finally {
+        this.loading = false;
+        console.log('[OrderDetail] Carga de orden completada');
+      }
+    },
+    async updateStatus() {
+      console.log('[OrderDetail] Intentando actualizar estado a:', this.newStatus);
+      try {
+        if (!this.user) {
+          const errorMsg = 'No se pudo identificar al usuario';
+          console.error('[OrderDetail] ' + errorMsg);
+          throw new Error(errorMsg);
+        }
+
+        const cambioEstado = {
+          estadoAnterior: this.order.estado,
+          estadoNuevo: this.newStatus,
+          usuario: {
+            id: this.user.uid,
+            nombre: this.user.displayName,
+            email: this.user.email
+          },
+          fecha: new Date().toISOString()
+        };
+
+        console.log('[OrderDetail] Registrando cambio de estado:', cambioEstado);
+        
+        await updateOrderStatus(this.id, {
+          newStatus: this.newStatus,
+          cambioEstado
+        });
+
+        // Actualizar el estado localmente
+        this.order.estado = this.newStatus;
+        this.order.historialEstados.push(cambioEstado);
+        
+        console.log('[OrderDetail] Estado actualizado exitosamente');
+        this.toast.success(`Estado cambiado a ${this.getStatusLabel(this.newStatus)}`);
+      } catch (error) {
+        console.error('[OrderDetail] Error al actualizar estado:', error);
+        this.toast.error('Error al actualizar estado: ' + error.message);
+        // Revertir el cambio en el select
+        this.newStatus = this.order.estado;
       }
     },
     getStatusLabel(status) {
@@ -176,10 +259,18 @@ export default {
       return methods[method] || method;
     },
     printOrder() {
+      console.log('[OrderDetail] Imprimiendo orden');
       window.print();
     },
     formatDate(date) {
-      const options = { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+      const options = { 
+        day: 'numeric', 
+        month: 'long', 
+        year: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true
+      };
       return new Date(date).toLocaleDateString('es-GT', options);
     }
   }
@@ -231,46 +322,7 @@ export default {
   font-weight: bold;
 }
 
-.status-pendiente {
-  background-color: #fff3cd;
-  color: #856404;
-}
-
-.status-procesando {
-  background-color: #bee5eb;
-  color: #0c5460;
-}
-
-.status-verificado {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.status-empacado {
-  background-color: #cce5ff;
-  color: #004085;
-}
-
-.status-enviado {
-  background-color: #e2e3e5;
-  color: #383d41;
-}
-
-.status-entregado {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.status-completado {
-  background-color: #d1e7dd;
-  color: #0f5132;
-}
-
-.status-cancelado {
-  background-color: #f8d7da;
-  color: #721c24;
-}
-
+/* Estilos para las 3 fichas originales (manteniendo tu estilo) */
 .order-meta {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -294,6 +346,68 @@ export default {
   margin: 0.5rem 0;
 }
 
+/* Estilos para el historial (nuevo estilo) */
+.status-history {
+  margin: 2rem 0;
+  background: #f9f9f9;
+  padding: 1rem;
+  border-radius: 4px;
+}
+
+.status-history h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.history-list {
+  border: 1px solid #eee;
+  border-radius: 4px;
+  background: white;
+}
+
+.history-item {
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.history-change {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.old-status {
+  padding: 0.25rem 0.5rem;
+  background: #f0f0f0;
+  border-radius: 4px;
+}
+
+.new-status {
+  padding: 0.25rem 0.5rem;
+  background: #e0f7fa;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.fa-arrow-right {
+  color: #42b983;
+  margin: 0 0.5rem;
+}
+
+/* Resto de tus estilos originales... */
 .order-items {
   margin-bottom: 1.5rem;
 }
@@ -400,5 +514,46 @@ export default {
   body {
     font-size: 12pt;
   }
+}
+
+/* Colores de estados (manteniendo tus originales) */
+.status-pendiente {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-procesando {
+  background-color: #bee5eb;
+  color: #0c5460;
+}
+
+.status-verificado {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-empacado {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.status-enviado {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+.status-entregado {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-completado {
+  background-color: #d1e7dd;
+  color: #0f5132;
+}
+
+.status-cancelado {
+  background-color: #f8d7da;
+  color: #721c24;
 }
 </style>

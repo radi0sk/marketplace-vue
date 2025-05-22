@@ -15,18 +15,44 @@ export const getOrders = async (status = null) => {
   try {
     let q = query(collection(db, 'ordenes'), orderBy('fecha', 'desc'));
     
-    if (status && status !== 'todos') {
+    if (status) {
       q = query(q, where('estado', '==', status));
     }
     
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      fecha: new Date(doc.data().fecha)
-    }));
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      let fecha;
+      
+      // Caso 1: Es un Timestamp de Firestore
+      if (data.fecha?.toDate) {
+        fecha = data.fecha.toDate();
+      } 
+      // Caso 2: Es un string ISO
+      else if (typeof data.fecha === 'string') {
+        fecha = new Date(data.fecha);
+      }
+      // Caso 3: Es un número (timestamp)
+      else if (typeof data.fecha === 'number') {
+        fecha = new Date(data.fecha);
+      }
+      // Caso 4: No existe o es inválido
+      else {
+        fecha = new Date();
+      }
+      
+      return {
+        id: doc.id,
+        ...data,
+        fecha: fecha
+      };
+    });
   } catch (error) {
-    console.error('Error getting orders:', error);
+    if (error.code === 'failed-precondition') {
+      console.warn('Índice no encontrado, devolviendo array vacío');
+      return [];
+    }
+    console.error('Error al obtener pedidos:', error);
     throw error;
   }
 };
@@ -40,10 +66,24 @@ export const getOrderById = async (orderId) => {
       throw new Error('Order not found');
     }
     
+    const data = orderSnap.data();
+    let fecha;
+    
+    // Misma lógica de conversión de fecha que en getOrders
+    if (data.fecha?.toDate) {
+      fecha = data.fecha.toDate();
+    } else if (typeof data.fecha === 'string') {
+      fecha = new Date(data.fecha);
+    } else if (typeof data.fecha === 'number') {
+      fecha = new Date(data.fecha);
+    } else {
+      fecha = new Date();
+    }
+    
     return {
       id: orderSnap.id,
-      ...orderSnap.data(),
-      fecha: orderSnap.data().fecha ? new Date(orderSnap.data().fecha) : new Date()
+      ...data,
+      fecha: fecha
     };
   } catch (error) {
     console.error('Error getting order:', error);
@@ -56,13 +96,8 @@ export const updateOrderStatus = async (orderId, { newStatus, cambioEstado }) =>
     const orderRef = doc(db, 'ordenes', orderId);
     
     await runTransaction(db, async (transaction) => {
-      // Actualizar el estado principal
       transaction.update(orderRef, { 
-        estado: newStatus 
-      });
-      
-      // Agregar al historial de estados
-      transaction.update(orderRef, {
+        estado: newStatus,
         historialEstados: arrayUnion(cambioEstado)
       });
     });
