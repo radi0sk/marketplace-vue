@@ -136,10 +136,18 @@
 </template>
 
 <script>
-import { auth, db } from "@/services/firebase";
+import { db } from "@/services/firebase";
 import { useToast } from "vue-toastification";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { uploadImageToCloudinary } from "@/services/cloudinary";
+import { 
+  doc, 
+  getDoc, 
+  updateDoc,
+  collection,
+  query,
+  where,
+  getDocs
+} from "firebase/firestore";
 
 export default {
   name: "UserProfile",
@@ -165,7 +173,8 @@ export default {
         tiempoEntrega: 3
       },
       defaultAvatar: "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png",
-      productsData: {}
+      favoriteProducts: [],
+      loadingFavorites: false
     };
   },
   computed: {
@@ -175,28 +184,31 @@ export default {
         'mayorista': 'Mayorista',
         'admin': 'Administrador'
       };
-      return roles[this.user.role] || this.user.role;
+      return roles[this.user?.role] || this.user?.role;
     }
   },
   async created() {
-    await this.loadUserProfile();
-    // Cargar información básica de productos favoritos para mostrar imágenes
-    await this.loadFavoriteProducts();
+    try {
+      await this.loadUserProfile();
+    } catch (error) {
+      console.error("Error in created hook:", error);
+      this.toast.error("Error al inicializar el perfil");
+    }
   },
   methods: {
     async loadUserProfile() {
       try {
+        const auth = await import("@/services/firebase").then(m => m.auth);
         auth.onAuthStateChanged(async (authUser) => {
           if (authUser) {
-            // Obtener datos adicionales de Firestore
             const userDoc = await getDoc(doc(db, "users", authUser.uid));
             if (userDoc.exists()) {
               this.user = {
                 ...authUser,
                 ...userDoc.data()
               };
-              // Inicializar datos editables
               this.editableUser = { ...this.user };
+              await this.loadFavoriteProducts();
             } else {
               this.user = authUser;
               this.editableUser = { ...authUser };
@@ -208,29 +220,54 @@ export default {
       } catch (error) {
         this.toast.error("Error al cargar el perfil de usuario");
         console.error("Error loading user profile:", error);
+        throw error; // Re-lanzamos el error para que pueda ser capturado por el creado
       }
     },
     
     async loadFavoriteProducts() {
-      if (!this.user?.favorites?.length) return;
+      if (!this.user?.favorites?.length) {
+        this.favoriteProducts = [];
+        return;
+      }
       
-      // Aquí deberías implementar una función que cargue información básica
-      // de los productos favoritos para mostrar sus imágenes
-      // Esto es un ejemplo simplificado
-      /*
-      const products = await Promise.all(
-        this.user.favorites.map(id => getProductById(id))
-      );
-      products.forEach(product => {
-        this.productsData[product.id] = product;
-      });
-      */
+      this.loadingFavorites = true;
+      try {
+        const productsRef = collection(db, "products");
+        const q = query(productsRef, where("__name__", "in", this.user.favorites.slice(0, 4)));
+        const snapshot = await getDocs(q);
+        
+        this.favoriteProducts = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+      } catch (error) {
+        console.error("Error cargando favoritos:", error);
+        this.toast.error("Error al cargar productos favoritos");
+      } finally {
+        this.loadingFavorites = false;
+      }
     },
     
     getProductImage(productId) {
-      // Implementar lógica para obtener la imagen del producto
-      return this.productsData[productId]?.mainImage || this.defaultAvatar;
-    },
+  if (!this.favoriteProducts || this.favoriteProducts.length === 0) {
+    return this.defaultAvatar;
+  }
+  
+  const product = this.favoriteProducts.find(p => p.id === productId);
+  
+  // Si encontramos el producto y tiene imagen principal, la devolvemos
+  if (product?.mainImage) {
+    return product.mainImage;
+  }
+  
+  // Si el producto tiene imágenes pero no mainImage, tomamos la primera
+  if (product?.images?.length > 0) {
+    return product.images[0];
+  }
+  
+  // Si no hay imágenes, devolvemos la imagen por defecto
+  return this.defaultAvatar;
+},
     
     startEditing() {
       this.isEditing = true;
