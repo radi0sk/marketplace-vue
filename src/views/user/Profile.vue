@@ -85,12 +85,12 @@
         <h3>Productos Favoritos</h3>
         <div class="favorites-grid">
           <div v-for="productId in user.favorites.slice(0, 4)" :key="productId" class="favorite-item">
-            <router-link :to="`/products/${productId}`">
+            <router-link :to="`/product/${productId}`">
               <img :src="getProductImage(productId)" alt="Producto favorito" class="favorite-image" />
             </router-link>
           </div>
         </div>
-        <router-link to="/user/favorites" class="view-all">Ver todos los favoritos</router-link>
+        <router-link to="/favorites" class="view-all">Ver todos los favoritos</router-link>
       </div>
     </div>
 
