@@ -181,8 +181,8 @@
       <button type="submit" :disabled="isSubmitting" class="submit-btn">
         {{ isSubmitting ? 'Guardando...' : 'Guardar Producto' }}
       </button>
-      <button type="button" @click="resetForm" class="cancel-btn">Limpiar Formulario</button>
-      <button><router-link to="/admin/products" class="back-link">cancelar</router-link></button>
+      <button type="button" @click="resetForm" class="cancel-btn">Limpiar</button>
+      <button type="button"> Cancelar</button>
     </div>
   </form>
 </template>

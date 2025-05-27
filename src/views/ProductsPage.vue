@@ -19,13 +19,27 @@
       <div class="categories-section">
         <h3>Categorías</h3>
         <ul>
+          <!-- Opción "Todos" -->
+          <li 
+            :class="{ active: activeCategory === null }"
+            @click="filterByCategory(null)"
+            class="all-category"
+          >
+            <font-awesome-icon :icon="['fas', 'th-large']" />
+            Todos los productos
+            <span class="product-count">({{ products.length }})</span>
+          </li>
+          
+          <!-- Categorías de la base de datos -->
           <li 
             v-for="category in categories" 
             :key="category.id"
             :class="{ active: activeCategory === category.id }"
             @click="filterByCategory(category.id)"
           >
+            <font-awesome-icon :icon="['fas', 'tag']" />
             {{ category.name }}
+            <span class="product-count">({{ getProductCountByCategory(category.id) }})</span>
           </li>
         </ul>
       </div>
@@ -53,6 +67,24 @@
     <main class="products-main">
       <!-- Filtros -->
       <div class="filters-bar">
+        <div class="active-filters">
+          <span v-if="activeCategory || searchQuery || minPrice || maxPrice" class="filter-label">
+            Filtros activos:
+          </span>
+          <span v-if="activeCategory" class="filter-tag">
+            {{ getCategoryName(activeCategory) }}
+            <button @click="filterByCategory(null)" class="remove-filter">×</button>
+          </span>
+          <span v-if="searchQuery" class="filter-tag">
+            "{{ searchQuery }}"
+            <button @click="clearSearch" class="remove-filter">×</button>
+          </span>
+          <span v-if="minPrice || maxPrice" class="filter-tag">
+            Precio: ${{ minPrice || 0 }} - ${{ maxPrice || '∞' }}
+            <button @click="clearPriceFilter" class="remove-filter">×</button>
+          </span>
+        </div>
+        
         <div class="sort-options">
           <label>Ordenar por:</label>
           <select v-model="sortOption" @change="applySorting">
@@ -75,10 +107,18 @@
         </div>
       </div>
 
+      <!-- Título de la sección actual -->
+      <div class="section-header">
+        <h2>
+          {{ activeCategory ? getCategoryName(activeCategory) : 'Todos los productos' }}
+          <span class="results-count">({{ totalFilteredProducts }} resultados)</span>
+        </h2>
+      </div>
+
       <!-- Lista de productos -->
-      <div class="product-grid">
+      <div class="product-grid" v-if="filteredProducts.length > 0">
         <div 
-          v-for="product in filteredProducts" 
+          v-for="product in paginatedProducts" 
           :key="product.id" 
           class="product-card"
         >
@@ -90,7 +130,7 @@
             <div class="product-info">
               <h3>{{ product.name }}</h3>
               <p class="price">${{ product.price }}</p>
-              <p class="category">{{ getCategoryName(product.category) }}</p>
+              <p class="category">{{ getCategoryName(product.categoria) }}</p>
               <div class="product-meta">
                 <span><font-awesome-icon :icon="['fas', 'eye']" /> {{ product.views || 0 }}</span>
                 <span><font-awesome-icon :icon="['fas', 'calendar-alt']" /> {{ formatDate(product.createdAt) }}</span>
@@ -115,6 +155,16 @@
             </button>
           </div>
         </div>
+      </div>
+
+      <!-- Mensaje cuando no hay productos -->
+      <div v-else class="no-products">
+        <font-awesome-icon :icon="['fas', 'search']" size="3x" />
+        <h3>No se encontraron productos</h3>
+        <p>Intenta ajustar tus filtros o buscar otros términos</p>
+        <button @click="clearAllFilters" class="clear-filters-btn">
+          Limpiar todos los filtros
+        </button>
       </div>
 
       <!-- Paginación -->
@@ -168,7 +218,7 @@ export default {
       categories: [],
       notifications: [],
       searchQuery: '',
-      activeCategory: null,
+      activeCategory: null, // null significa "Todos"
       sortOption: 'date-desc',
       minPrice: null,
       maxPrice: null,
@@ -197,9 +247,9 @@ export default {
         );
       }
       
-      // Filtrar por categoría
-      if (this.activeCategory) {
-        filtered = filtered.filter(p => p.category === this.activeCategory);
+      // Filtrar por categoría (null significa mostrar todos)
+      if (this.activeCategory !== null) {
+        filtered = filtered.filter(p => p.categoria === this.activeCategory);
       }
       
       // Filtrar por precio
@@ -229,26 +279,35 @@ export default {
           break;
       }
       
-      // Paginación
+      return filtered;
+    },
+    
+    paginatedProducts() {
       const start = (this.currentPage - 1) * this.itemsPerPage;
       const end = start + this.itemsPerPage;
-      return filtered.slice(start, end);
+      return this.filteredProducts.slice(start, end);
     },
+    
+    totalFilteredProducts() {
+      return this.filteredProducts.length;
+    },
+    
     totalPages() {
-      return Math.ceil(this.products.length / this.itemsPerPage);
+      return Math.ceil(this.filteredProducts.length / this.itemsPerPage);
     }
   },
   methods: {
     ...mapActions(['addToCart']),
+    
     async addToCartWithNotification(product) {
       try {
         await this.addToCart(product);
-      this.toast.success({
-        component: AddedToCartToast,
-        props: {
-          message: `"${product.name}" agregado al carrito!`
-        }
-      });
+        this.toast.success({
+          component: AddedToCartToast,
+          props: {
+            message: `"${product.name}" agregado al carrito!`
+          }
+        });
       } catch (error) {
         this.toast.error('Error al agregar producto al carrito', {
           position: "top-center"
@@ -257,70 +316,74 @@ export default {
     },
     
     async toggleFavorite(product) {
-  const user = auth.currentUser;
-  if (!user) {
-    this.toast.error("Debes iniciar sesión para agregar a favoritos");
-    return;
-  }
+      const user = auth.currentUser;
+      if (!user) {
+        this.toast.error("Debes iniciar sesión para agregar a favoritos");
+        return;
+      }
 
-  try {
-    const userRef = doc(db, "users", user.uid);
-    const productId = product.id;
-    const isFavorite = this.favoriteStatus[productId];
+      try {
+        const userRef = doc(db, "users", user.uid);
+        const productId = product.id;
+        const isFavorite = this.favoriteStatus[productId];
 
-    if (isFavorite) {
-      await updateDoc(userRef, {
-        favorites: arrayRemove(productId)
-      });
-      this.toast.success("Producto eliminado de favoritos");
-    } else {
-      await updateDoc(userRef, {
-        favorites: arrayUnion(productId)
-      });
-      this.toast.success("Producto agregado a favoritos");
-    }
+        if (isFavorite) {
+          await updateDoc(userRef, {
+            favorites: arrayRemove(productId)
+          });
+          this.toast.success("Producto eliminado de favoritos");
+        } else {
+          await updateDoc(userRef, {
+            favorites: arrayUnion(productId)
+          });
+          this.toast.success("Producto agregado a favoritos");
+        }
 
-    // En Vue 3, simplemente actualiza la propiedad reactiva directamente
-    this.favoriteStatus = {
-      ...this.favoriteStatus,
-      [productId]: !isFavorite
-    };
+        this.favoriteStatus = {
+          ...this.favoriteStatus,
+          [productId]: !isFavorite
+        };
 
-  } catch (error) {
-    console.error("Error updating favorites:", error);
-    this.toast.error("Error al actualizar favoritos");
-  }
-},
+      } catch (error) {
+        console.error("Error updating favorites:", error);
+        this.toast.error("Error al actualizar favoritos");
+      }
+    },
 
     async checkFavorites() {
-  const user = auth.currentUser;
-  if (!user) return;
+      const user = auth.currentUser;
+      if (!user) return;
 
-  try {
-    const userDoc = await getDoc(doc(db, "users", user.uid));
-    if (userDoc.exists()) {
-      const favorites = userDoc.data().favorites || [];
-      // Crear un nuevo objeto reactivo
-      this.favoriteStatus = Object.fromEntries(
-        this.products.map(product => [
-          product.id, 
-          favorites.includes(product.id)
-        ])
-      );
-    }
-  } catch (error) {
-    console.error("Error checking favorites:", error);
-  }
-},
+      try {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const favorites = userDoc.data().favorites || [];
+          this.favoriteStatus = Object.fromEntries(
+            this.products.map(product => [
+              product.id, 
+              favorites.includes(product.id)
+            ])
+          );
+        }
+      } catch (error) {
+        console.error("Error checking favorites:", error);
+      }
+    },
     
     async loadProducts() {
       this.loading = true;
       try {
+        console.log("Solicitando todos los productos de la colección 'products'");
         const productsSnapshot = await getDocs(collection(db, "products"));
-        this.products = productsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        this.products = productsSnapshot.docs.map(doc => {
+          const productData = {
+            id: doc.id,
+            ...doc.data()
+          };
+          console.log("Producto recibido:", productData);
+          return productData;
+        });
+        console.log(`Total de productos cargados: ${this.products.length}`);
       } catch (error) {
         console.error("Error loading products:", error);
       } finally {
@@ -329,15 +392,20 @@ export default {
     },
     
     async loadCategories() {
+      console.log("Solicitando todas las categorías de la colección 'categories'");
       const categoriesSnapshot = await getDocs(collection(db, "categories"));
-      this.categories = categoriesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      this.categories = categoriesSnapshot.docs.map(doc => {
+        const categoryData = {
+          id: doc.id,
+          ...doc.data()
+        };
+        console.log("Categoría recibida:", categoryData);
+        return categoryData;
+      });
+      console.log(`Total de categorías cargadas: ${this.categories.length}`);
     },
     
     loadNotifications() {
-      // Esto sería reemplazado por llamada a Firebase en producción
       this.notifications = [
         { id: 1, message: "Nuevo producto en tu categoría favorita", date: new Date() },
         { id: 2, message: "Oferta especial en productos de ganadería", date: new Date(Date.now() - 86400000) }
@@ -345,8 +413,12 @@ export default {
     },
     
     filterByCategory(categoryId) {
-      this.activeCategory = this.activeCategory === categoryId ? null : categoryId;
+      this.activeCategory = categoryId;
       this.currentPage = 1;
+    },
+    
+    getProductCountByCategory(categoryId) {
+      return this.products.filter(p => p.categoria === categoryId).length;
     },
     
     applySearch() {
@@ -358,6 +430,25 @@ export default {
     },
     
     applyPriceFilter() {
+      this.currentPage = 1;
+    },
+    
+    clearSearch() {
+      this.searchQuery = '';
+      this.currentPage = 1;
+    },
+    
+    clearPriceFilter() {
+      this.minPrice = null;
+      this.maxPrice = null;
+      this.currentPage = 1;
+    },
+    
+    clearAllFilters() {
+      this.activeCategory = null;
+      this.searchQuery = '';
+      this.minPrice = null;
+      this.maxPrice = null;
       this.currentPage = 1;
     },
     
@@ -390,7 +481,6 @@ export default {
 </script>
 
 <style scoped>
-/* Tus estilos existentes pueden permanecer igual */
 .products-page {
   display: flex;
   min-height: 100vh;
@@ -440,20 +530,37 @@ export default {
 }
 
 .categories-section li {
-  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
   margin-bottom: 0.3rem;
+  transition: all 0.2s ease;
 }
 
-.categories-section li:hover,
-.categories-section li.active {
+.categories-section li:hover {
   background: #e9ecef;
+  transform: translateX(2px);
 }
 
 .categories-section li.active {
+  background: #42b983;
+  color: white;
   font-weight: bold;
-  color: #42b983;
+}
+
+.all-category {
+  border-bottom: 1px solid #dee2e6;
+  margin-bottom: 0.5rem !important;
+  padding-bottom: 0.75rem !important;
+}
+
+.product-count {
+  margin-left: auto;
+  font-size: 0.8rem;
+  opacity: 0.7;
 }
 
 .notifications-section {
@@ -494,6 +601,39 @@ export default {
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
+.active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  flex: 1;
+}
+
+.filter-label {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.filter-tag {
+  background: #e9ecef;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.remove-filter {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #666;
+  padding: 0;
+  margin-left: 0.25rem;
+}
+
 .sort-options, .price-filter {
   display: flex;
   align-items: center;
@@ -526,6 +666,24 @@ export default {
   border: none;
   border-radius: 4px;
   cursor: pointer;
+}
+
+.section-header {
+  margin-bottom: 1.5rem;
+}
+
+.section-header h2 {
+  color: #2c3e50;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.results-count {
+  color: #6c757d;
+  font-weight: normal;
+  font-size: 0.9rem;
 }
 
 .product-grid {
@@ -619,6 +777,28 @@ export default {
   font-size: 0.8rem;
   color: #6c757d;
   margin-top: 0.5rem;
+}
+
+.no-products {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+.no-products h3 {
+  margin: 1rem 0;
+  color: #495057;
+}
+
+.clear-filters-btn {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: #42b983;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
 }
 
 .pagination {
