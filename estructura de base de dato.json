@@ -1,0 +1,147 @@
+{
+  "colecciones": {
+    "categories": {
+      "descripcion": "Almacena información sobre las categorías de productos.",
+      "ejemplo_documento": {
+        "DGs0BPAHHm4rghNBl57a": { // ID del documento de categoría
+          "image": "https://res.cloudinary.com/dsfnladar/image/upload/v1744222540/ganaderia-sostenible-cambio-climatico_n0umwa.jpg",
+          "name": "Ganaderia"
+        }
+      }
+    },
+    "ordenes": {
+      "descripcion": "Contiene los detalles de cada orden de compra.",
+      "ejemplo_documento": {
+        "1744415535330": { // ID del documento de la orden
+          "cliente": {
+            "email": "rony13m1@gmail.com",
+            "name": "Rony Ramirez",
+            "telefono": "54317333",
+            "comprobante": "ChatGPT Image 9 abr 2025, 18_47_04.png"
+          },
+          "direccion": {
+            "ciudad": "santiago atitlan",
+            "codigoPostal": "07019",
+            "departamento": "solola",
+            "direccion": "callejon blanca canton panaja",
+            "nombre": "Rony Ramirez",
+            "tiempoEntrega": 3
+          },
+          "envio": 50,
+          "estado": "completado",
+          "fecha": "2025-04-11T23:52:15.329Z",
+          "historialEstados": [
+            {
+              "estadoAnterior": { 
+                "newStatus": "verificado",
+                "updatedBy": {
+                  "updateTime": "2025-05-20T00:41:55.512Z",
+                  "userEmail": "sin-email",
+                  "userId": "unknown",
+                  "userName": "Usuario desconocido"
+                }
+              },
+              "estadoNuevo": "entregado",
+              "fecha": "2025-05-20T01:00:04.342Z",
+              "usuario": {
+                "email": "pedrora3@gmail.com",
+                "id": "zJfN4Cz90wdH7kjvlOxjuxgHRWx2",
+                "nombre": "pedro Ramirez"
+              }
+            },
+            {
+              "estadoAnterior": "entregado",
+              "estadoNuevo": "completado",
+              "fecha": "2025-05-20T01:00:55.874Z",
+              "usuario": {
+                "email": "pedrora3@gmail.com",
+                "id": "zJfN4Cz90wdH7kjvlOxjuxgHRWx2",
+                "nombre": "pedro Ramirez"
+              }
+            }
+          ],
+          "items": [
+            {
+              "categoria": "DGs0BPAHHm4rghNBl57a", // ID de la categoría
+              "id": "6EAjgPYQtQKQxhj2W1Jy",     // ID del producto
+              "name": "Implant ADE plus",
+              "price": 375,
+              "quantity": 1,
+              "metodoPago": "deposito", 
+              "recargo": 0,             
+              "subtotal": 375,          
+              "total": 425              
+            }
+          ]
+        }
+      }
+    },
+    "products": {
+      "descripcion": "Almacena la información detallada de cada producto.",
+      "ejemplo_documento": {
+        "wK1wdfpMEduLoZoi1uDx": { // ID del documento de producto
+          "availability": "in_stock",
+          "brand": "generica",
+          "category": "l2PP23kUc12GPAt8VFQJ", // ID de la categoría a la que pertenece
+          "comparePrice": 0,
+          "cost": 6,
+          "createdAt": "2025-05-22T22:17:48.799Z",
+          "createdBy": "zJfN4Cz90wdH7kjvlOxjuxgHRWx2", // ID del usuario que creó el producto
+          "description": " el aceite de pescado es un líquido extraído del pescado cocido.",
+          "dimensions": "16x18x24 cm",
+          "features": [], // Array vacío o con características
+          "images": [
+            "https://res.cloudinary.com/dsfnladar/image/upload/v1747952265/rjxxxisdbfnon9cj7udt.jpg",
+            "https://res.cloudinary.com/dsfnladar/image/upload/v1747952266/fkvu8vqrlhaipztibs87.png"
+          ],
+          "mainImage": "https://res.cloudinary.com/dsfnladar/image/upload/v1747952265/rjxxxisdbfnon9cj7udt.jpg",
+          "model": "2025",
+          "name": "Aceite de pescado",
+          "price": 1500,
+          "shippingCost": 60,
+          "shippingType": "fixed",
+          "sku": "GEN-TIL-5323",
+          "stock": 10,
+          "tags": [], // Array vacío o con etiquetas
+          "updatedAt": "2025-05-22T22:17:48.799Z",
+          "weight": 30,
+          "wholesaleMin": 6,
+          "wholesalePrice": 1300
+        }
+      }
+    },
+    "testimonials": {
+      "descripcion": "Guarda testimonios o reseñas de clientes.",
+      "ejemplo_documento": {
+        "c1ofu6pkGXUEmOVyQoTA": { // ID del documento de testimonio
+          "author": "Cliente 2",
+          "message": "Muy satisfecho con mi compra, ¡volveré pronto!"
+        }
+      }
+    },
+    "users": {
+      "descripcion": "Almacena los perfiles de los usuarios de la aplicación.",
+      "ejemplo_documento": {
+        "1iVJ354qJ7azkSqiDTtYyiye6uP2": { // ID del documento de usuario (probablemente el UID de Firebase Auth)
+          "direccionEnvio": { // Puede ser la dirección predeterminada o la última usada
+            "ciudad": " Pueblo St",
+            "codigoPostal": "07019",
+            "costo": 0, // Costo asociado a esta dirección?
+            "departamento": "solola",
+            "direccion": "400 W Pueblo St, Santa Barbara, CA 93105, Estados Unidos",
+            "nombre": "pedro ramirez",
+            "tiempoEntrega": 3
+          },
+          "email": "pedrora3@gmail.com",
+          "favorites": [], // Array de IDs de productos favoritos
+          "name": "pedro Ramirez",
+          "photoURL": "https://lh3.googleusercontent.com/a/ACg8ocKVJSoI59fDKEMWnh2dnf7tH9liNlaVSss9STzraaPWN942Gd8MEQ=s96-c",
+          "purchaseHistory": [], // Array de IDs de órdenes o un resumen del historial
+          "role": "admin", // Rol del usuario (ej. 'admin', 'cliente')
+          "telefono": "5431733",
+          "visitCount": 356 // Contador de visitas o interacciones
+        }
+      }
+    }
+  }
+}

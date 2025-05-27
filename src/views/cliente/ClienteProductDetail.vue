@@ -40,15 +40,20 @@
       <button @click="addToCart" class="btn primary">
         Añadir al carrito
       </button>
+      <button 
+        @click="toggleFavorite" 
+        class="favorite-btn"
+        :class="{ 'is-favorite': isFavorite }"
+      >
+        <i class="fas" :class="isFavorite ? 'fa-heart' : 'fa-heart-o'"></i>
+        {{ isFavorite ? 'En favoritos' : 'Agregar a favoritos' }}
+      </button>
 
       <button @click="contactAdvisor" class="btn secondary">
         Hablar con un asesor
       </button>
 
-      <div class="payment-options">
-        <p>Págalo a meses con crédito <strong>Atrato</strong> 💷</p>
-        <small>Monto mínimo de compra $1000 Ver más</small>
-      </div>
+     
 
       <!-- Descripción y detalles -->
       <div class="product-details">
@@ -98,8 +103,8 @@
 </template>
 
 <script>
-import { db } from "@/services/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { db, auth } from "@/services/firebase";
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { useToast } from "vue-toastification";
 import { 
   faMoneyBillWave as cashIcon,
@@ -124,7 +129,9 @@ export default {
         cash: cashIcon,
         collect: collectIcon,
         bank: bankIcon
-      }
+      },
+      isFavorite: false,
+      loadingFavorite: false
     };
   },
   setup() {
@@ -142,6 +149,7 @@ export default {
         if (this.product.images?.length) {
           this.mainImage = this.product.images[0];
         }
+        await this.checkIfFavorite();
       } else {
         this.toast.error("Producto no encontrado");
       }
@@ -151,6 +159,55 @@ export default {
     }
   },
   methods: {
+    async checkIfFavorite() {
+      const user = auth.currentUser;
+      if (!user) return;
+      
+      try {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const favorites = userDoc.data().favorites || [];
+          this.isFavorite = favorites.includes(this.product.id);
+        }
+      } catch (error) {
+        console.error("Error checking favorite status:", error);
+      }
+    }, async toggleFavorite() {
+      if (this.loadingFavorite) return;
+      this.loadingFavorite = true;
+      
+      const user = auth.currentUser;
+      if (!user) {
+        this.toast.error("Debes iniciar sesión para agregar a favoritos");
+        this.loadingFavorite = false;
+        return;
+      }
+      
+      try {
+        const userRef = doc(db, "users", user.uid);
+        
+        if (this.isFavorite) {
+          // Remover de favoritos
+          await updateDoc(userRef, {
+            favorites: arrayRemove(this.product.id)
+          });
+          this.toast.success("Producto eliminado de favoritos");
+        } else {
+          // Agregar a favoritos
+          await updateDoc(userRef, {
+            favorites: arrayUnion(this.product.id)
+          });
+          this.toast.success("Producto agregado a favoritos");
+        }
+        
+        this.isFavorite = !this.isFavorite;
+      } catch (error) {
+        console.error("Error updating favorites:", error);
+        this.toast.error("Error al actualizar favoritos");
+      } finally {
+        this.loadingFavorite = false;
+      }
+    },
     addToCart() {
       if (!this.$store) {
         this.toast.error("Error al agregar al carrito");
@@ -173,6 +230,37 @@ export default {
 </script>
 
 <style scoped>
+.favorite-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 0.25rem;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 1rem;
+}
+
+.favorite-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.favorite-btn.is-favorite {
+  background-color: #ffebee;
+  border-color: #ef9a9a;
+  color: #c62828;
+}
+
+.favorite-btn i {
+  font-size: 1.2rem;
+}
+
+.favorite-btn.is-favorite i {
+  color: #c62828;
+}
 .product-detail {
   display: grid;
   grid-template-columns: 1fr 1fr;

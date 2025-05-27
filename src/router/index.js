@@ -80,7 +80,7 @@ const routes = [
   {
       path: "/favorites",
       name: "Favorites",
-      component: () => import("@/views/user/Profile.vue"),
+      component: () => import("@/views/user/FavoritesView.vue"),
     },
   {
       path: "/purchase-history",

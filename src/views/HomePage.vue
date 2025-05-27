@@ -36,19 +36,27 @@
       :to="`/product/${product.id}`" 
       class="product-card"
     >
-      <div class="product-image-container">
-        <img 
-          :src="product.images && product.images.length > 0 ? product.images[0] : 'ruta/a/imagen/predeterminada.jpg'" 
-          :alt="product.name" 
-          class="product-image"
-        />
-        <button 
-          class="add-to-cart-button"
-          @click.prevent="addToCart(product)"
-        >
-          <i class="fas fa-shopping-cart"></i> Agregar al carrito
-        </button>
-      </div>
+     <div class="product-image-container">
+  <img 
+    :src="product.images && product.images.length > 0 ? product.images[0] : 'ruta/a/imagen/predeterminada.jpg'" 
+    :alt="product.name" 
+    class="product-image"
+  />
+  <div class="product-actions">
+    <button class="add-to-cart-button" @click.prevent="addToCart(product)">
+      <font-awesome-icon :icon="['fas', 'shopping-cart']" />
+    </button>
+    <button 
+      class="favorite-button"
+      @click.prevent="toggleFavorite(product)"
+      :class="{ 'is-favorite': favoriteStatus[product.id] }"
+    >
+      <font-awesome-icon 
+        :icon="favoriteStatus[product.id] ? ['fas', 'heart'] : ['far', 'heart']" 
+      />
+    </button>
+  </div>
+</div>
       <div class="product-info">
         <h3>{{ product.name }}</h3>
         <div class="price-rating">
@@ -91,17 +99,23 @@
 </template>
 
 <script>
-import { db } from "@/services/firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { db, auth } from "@/services/firebase";
+import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { useToast } from "vue-toastification";
+
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
 export default {
   name: "HomePage",
+  components: {
+    FontAwesomeIcon
+  },
   data() {
     return {
       categories: [],
       featuredProducts: [],
       testimonials: [],
+      favoriteStatus: {}
     };
   },
   setup() {
@@ -128,6 +142,58 @@ export default {
     }));
   },
   methods: {
+    async toggleFavorite(product) {
+    const user = auth.currentUser;
+    if (!user) {
+      this.toast.error("Debes iniciar sesión para agregar a favoritos");
+      return;
+    }
+
+    try {
+      const userRef = doc(db, "users", user.uid);
+      const productId = product.id;
+      const isFavorite = this.favoriteStatus[productId];
+
+      if (isFavorite) {
+        // Remover de favoritos
+        await updateDoc(userRef, {
+          favorites: arrayRemove(productId)
+        });
+        this.toast.success("Producto eliminado de favoritos");
+      } else {
+        // Agregar a favoritos
+        await updateDoc(userRef, {
+          favorites: arrayUnion(productId)
+        });
+        this.toast.success("Producto agregado a favoritos");
+      }
+
+      // Actualizar estado local
+      product.isFavorite = !product.isFavorite
+
+    } catch (error) {
+      console.error("Error updating favorites:", error);
+      this.toast.error("Error al actualizar favoritos");
+    }
+  },
+
+  async checkFavorites() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    try {
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (userDoc.exists()) {
+        const favorites = userDoc.data().favorites || [];
+        // Inicializar el estado de favoritos para todos los productos
+        this.featuredProducts.forEach(product => {
+          this.$set(this.favoriteStatus, product.id, favorites.includes(product.id));
+        });
+      }
+    } catch (error) {
+      console.error("Error checking favorites:", error);
+    }
+  },
     goToSearchPage(categoryId) {
       this.$router.push({ path: "/search", query: { category: categoryId } });
     },
@@ -142,6 +208,49 @@ export default {
 
 <style scoped>
 
+.product-actions {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem; /* Espacio entre botones */
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.product-card:hover .product-actions {
+  opacity: 1;
+}
+
+.add-to-cart-button, 
+.favorite-button {
+  padding: 0.5rem;
+  background-color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.add-to-cart-button {
+  background-color: #42b983;
+  color: white;
+}
+
+.favorite-button {
+  background-color: white;
+  color: #666;
+}
+
+.favorite-button.is-favorite {
+  color: #c62828;
+}
 
 .home-page {
   padding: 1rem;
@@ -235,27 +344,9 @@ h2 {
   transform: scale(1.05);
 }
 
-.add-to-cart-button {
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 0.5rem 1rem;
-  background-color: #42b983;
- color: white !important;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
 
-.product-card:hover .add-to-cart-button {
-  opacity: 1;
-}
+
+
 
 .product-info {
   text-align: left;
@@ -348,4 +439,5 @@ h2 {
   margin-top: 0.5rem;
   font-weight: bold;
 }
+
 </style>

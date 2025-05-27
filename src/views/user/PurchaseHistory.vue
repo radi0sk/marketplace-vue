@@ -8,64 +8,130 @@
     </div>
     
     <div v-else>
+      <!-- Filtros y búsqueda -->
+      <div class="filters-container">
+        <div class="search-box">
+          <input 
+            v-model="searchQuery" 
+            placeholder="Buscar órdenes o productos..." 
+            @input="handleSearch"
+          />
+          <i class="fas fa-search"></i>
+        </div>
+        
+        <div class="filter-group">
+          <label>Filtrar por estado:</label>
+          <select v-model="statusFilter" @change="filterOrders">
+            <option value="todos">Todos</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="completado">Completados</option>
+            <option value="cancelado">Cancelados</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label>Ordenar por:</label>
+          <select v-model="sortBy" @change="sortOrders">
+            <option value="fecha-desc">Más recientes primero</option>
+            <option value="fecha-asc">Más antiguos primero</option>
+            <option value="total-desc">Mayor monto primero</option>
+            <option value="total-asc">Menor monto primero</option>
+          </select>
+        </div>
+      </div>
+      
       <div v-if="loading" class="loading">
         <i class="fas fa-spinner fa-spin"></i> Cargando historial...
       </div>
       
-      <div v-if="!loading && ordenes.length === 0" class="no-orders">
-        <p>Aún no tienes órdenes registradas</p>
+      <div v-if="!loading && filteredOrders.length === 0" class="no-orders">
+        <p v-if="searchQuery || statusFilter !== 'todos'">No se encontraron órdenes con los filtros aplicados</p>
+        <p v-else>Aún no tienes órdenes registradas</p>
         <router-link to="/HomePage" class="btn-comprar">Ir a comprar</router-link>
       </div>
       
-      <div v-for="orden in ordenes" :key="orden.id" class="orden-card">
-        <div class="orden-header">
-          <h2>Orden #{{ orden.id }}</h2>
-          <span class="estado" :class="orden.estado">{{ orden.estado }}</span>
-          <span class="fecha">{{ formatFecha(orden.fecha) }}</span>
-        </div>
-        
-        <div class="orden-body">
-          <div class="orden-info">
-            <div>
-              <h3>Información de envío</h3>
-              <p><strong>Nombre:</strong> {{ orden.direccion.nombre }}</p>
-              <p><strong>Dirección:</strong> {{ orden.direccion.direccion }}</p>
-              <p><strong>Ciudad:</strong> {{ orden.direccion.ciudad }}</p>
-            </div>
-            
-            <div>
-              <h3>Método de pago</h3>
-              <p>{{ formatMetodoPago(orden.metodoPago) }}</p>
-              <p><strong>Total:</strong> Q{{ orden.total.toFixed(2) }}</p>
-            </div>
+      <!-- Lista de órdenes -->
+      <!-- Reemplazar las secciones duplicadas con esto: -->
+<div v-for="orden in paginatedOrders" :key="orden.id" class="orden-card-simple">
+  <div class="orden-imagen">
+    <img 
+      :src="orden.items[0].images ? orden.items[0].images[0] : placeholderImage" 
+      :alt="orden.items[0].name" 
+    />
+  </div>
+  
+  <div class="orden-info-simple">
+    <div class="orden-header-simple">
+      <h3>Orden #{{ orden.id }}</h3>
+      <span class="fecha-simple">{{ formatFechaSimple(orden.fecha) }}</span>
+    </div>
+    
+    <div class="orden-estado-simple">
+      <span class="estado" :class="orden.estado">{{ formatEstado(orden.estado) }}</span>
+    </div>
+  </div>
+  
+  <div class="orden-accion">
+    <button @click="verDetalle(orden.id)" class="btn-detalle-simple">
+      <i class="fas fa-file-alt"></i> Ver detalles completos
+    </button>
+  </div>
+</div>
+      
+      <!-- Paginación -->
+      <div v-if="filteredOrders.length > itemsPerPage" class="pagination">
+        <button 
+          @click="prevPage" 
+          :disabled="currentPage === 1" 
+          class="page-btn"
+        >
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <span class="page-info">
+          Página {{ currentPage }} de {{ totalPages }}
+        </span>
+        <button 
+          @click="nextPage" 
+          :disabled="currentPage === totalPages" 
+          class="page-btn"
+        >
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+      
+      <!-- Modal de valoración -->
+      <div v-if="showReviewModal" class="modal-overlay">
+        <div class="review-modal">
+          <h3>Valorar producto: {{ currentProduct.name }}</h3>
+          <div class="rating-stars">
+            <i 
+              v-for="star in 5" 
+              :key="star" 
+              :class="['fas fa-star', star <= currentRating ? 'active' : '']"
+              @click="setRating(star)"
+            ></i>
           </div>
-          
-          <div class="orden-productos">
-            <h3>Productos</h3>
-            <div v-for="item in orden.items" :key="item.id" class="producto-item">
-              <img :src="item.images ? item.images[0] : 'https://res.cloudinary.com/dsfnladar/image/upload/v1744650151/al57mqnrifrtjfsbt8tw.webp'" :alt="item.name" class="producto-img" />
-              <div class="producto-info">
-                <p class="nombre">{{ item.name }}</p>
-                <p class="cantidad">{{ item.quantity }} x Q{{ item.price.toFixed(2) }}</p>
-              </div>
-              <p class="subtotal">Q{{ (item.price * item.quantity).toFixed(2) }}</p>
-            </div>
+          <textarea 
+            v-model="reviewText" 
+            placeholder="Escribe tu opinión sobre este producto..."
+            class="review-textarea"
+          ></textarea>
+          <div class="modal-actions">
+            <button @click="submitReview" class="btn-submit">Enviar valoración</button>
+            <button @click="closeReviewModal" class="btn-cancel">Cancelar</button>
           </div>
-        </div>
-        
-        <div class="orden-footer">
-          <button @click="verDetalle(orden.id)" class="btn-detalle">
-            Ver detalles
-          </button>
         </div>
       </div>
     </div>
   </div>
 </template>
 
+
+
 <script>
-import { auth, db } from '@/services/firebase';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { auth, db, storage } from '@/services/firebase';
+import { collection, query, where, getDocs, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { ref as storageRef, getDownloadURL } from 'firebase/storage';
 import { useToast } from "vue-toastification";
 
 export default {
@@ -77,47 +143,185 @@ export default {
   data() {
     return {
       ordenes: [],
+      filteredOrders: [],
+      paginatedOrders: [],
       loading: false,
-      isAuthenticated: false
+      isAuthenticated: false,
+      searchQuery: '',
+      statusFilter: 'todos',
+      sortBy: 'fecha-desc',
+      currentPage: 1,
+      itemsPerPage: 5,
+      expandedTimeline: null,
+      placeholderImage: 'https://res.cloudinary.com/dsfnladar/image/upload/v1744650151/al57mqnrifrtjfsbt8tw.webp',
+      showReviewModal: false,
+      currentProduct: {},
+      currentRating: 0,
+      reviewText: ''
     };
   },
+  computed: {
+    totalPages() {
+      return Math.ceil(this.filteredOrders.length / this.itemsPerPage);
+    }
+  },
+  watch: {
+    currentPage() {
+      console.log('Current page changed to:', this.currentPage);
+      this.paginateOrders();
+    },
+    filteredOrders() {
+      console.log('Filtered orders updated. Count:', this.filteredOrders.length);
+      this.currentPage = 1;
+      this.paginateOrders();
+    }
+  },
   created() {
+    console.log('Component created. Setting up auth state listener...');
     auth.onAuthStateChanged((user) => {
+      console.log('Auth state changed. User:', user);
       this.isAuthenticated = !!user;
       if (user) {
+        console.log('User authenticated. Email:', user.email);
         this.cargarOrdenes(user.email);
+      } else {
+        console.log('No user authenticated');
       }
     });
   },
   methods: {
     async cargarOrdenes(email) {
+      console.log('Loading orders for email:', email);
       try {
         this.loading = true;
         this.ordenes = [];
         
+        console.log('Creating Firestore query...');
         const q = query(
           collection(db, 'ordenes'),
           where('cliente.email', '==', email),
           orderBy('fecha', 'desc')
         );
         
+        console.log('Executing query...');
         const querySnapshot = await getDocs(q);
+        console.log('Query completed. Document count:', querySnapshot.size);
         
         querySnapshot.forEach((doc) => {
+          console.log('Processing document ID:', doc.id);
+          const orderData = doc.data();
+          console.log('Order data:', orderData);
           this.ordenes.push({
             id: doc.id,
-            ...doc.data()
+            ...orderData
           });
         });
         
+        console.log('Total orders loaded:', this.ordenes.length);
+        this.filteredOrders = [...this.ordenes];
+        console.log('Filtered orders initialized:', this.filteredOrders.length);
+        
       } catch (error) {
+        console.error('Error loading orders:', error);
         this.toast.error(`Error al cargar órdenes: ${error.message}`);
       } finally {
         this.loading = false;
+        console.log('Loading completed');
       }
     },
     
+    filterOrders() {
+      console.log('Filtering orders by status:', this.statusFilter);
+      if (this.statusFilter === 'todos') {
+        this.filteredOrders = [...this.ordenes];
+      } else {
+        this.filteredOrders = this.ordenes.filter(
+          orden => orden.estado === this.statusFilter
+        );
+      }
+      console.log('Orders after status filter:', this.filteredOrders.length);
+      this.handleSearch();
+    },
+    
+    handleSearch() {
+      console.log('Handling search with query:', this.searchQuery);
+      if (!this.searchQuery) {
+        console.log('No search query, returning full filtered list');
+        return;
+      }
+      
+      const query = this.searchQuery.toLowerCase();
+      this.filteredOrders = this.filteredOrders.filter(orden => {
+        // Buscar en ID de orden
+        if (orden.id.toLowerCase().includes(query)) {
+          console.log('Match found in order ID:', orden.id);
+          return true;
+        }
+        
+        // Buscar en nombres de productos
+        const hasProduct = orden.items.some(item => {
+          const match = item.name.toLowerCase().includes(query);
+          if (match) {
+            console.log('Match found in product:', item.name);
+          }
+          return match;
+        });
+        
+        return hasProduct;
+      });
+      
+      console.log('Orders after search filter:', this.filteredOrders.length);
+    },
+    
+    sortOrders() {
+      console.log('Sorting orders by:', this.sortBy);
+      const [field, direction] = this.sortBy.split('-');
+      
+      this.filteredOrders.sort((a, b) => {
+        if (field === 'fecha') {
+          return direction === 'desc' 
+            ? new Date(b.fecha) - new Date(a.fecha)
+            : new Date(a.fecha) - new Date(b.fecha);
+        } else if (field === 'total') {
+          return direction === 'desc' 
+            ? b.total - a.total 
+            : a.total - b.total;
+        }
+        return 0;
+      });
+      
+      console.log('Orders after sorting. First order:', this.filteredOrders[0]);
+    },
+    
+    paginateOrders() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      const end = start + this.itemsPerPage;
+      this.paginatedOrders = this.filteredOrders.slice(start, end);
+      console.log('Paginated orders. Showing:', start, 'to', end, 'of', this.filteredOrders.length);
+      console.log('Current page items:', this.paginatedOrders);
+    },
+    
+    nextPage() {
+      console.log('Next page requested. Current:', this.currentPage, 'Total:', this.totalPages);
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+      }
+    },
+    
+    prevPage() {
+      console.log('Previous page requested. Current:', this.currentPage);
+      if (this.currentPage > 1) {
+        this.currentPage--;
+      }
+    },
+    
+    toggleTimeline(orderId) {
+      console.log('Toggling timeline for order:', orderId);
+      this.expandedTimeline = this.expandedTimeline === orderId ? null : orderId;
+    },
+    
     formatFecha(fechaISO) {
+      console.log('Formatting date:', fechaISO);
       const fecha = new Date(fechaISO);
       return fecha.toLocaleDateString('es-GT', {
         year: 'numeric',
@@ -129,110 +333,187 @@ export default {
     },
     
     formatMetodoPago(metodo) {
-      return metodo === 'deposito' ? 'Depósito bancario' : 'Pago contra entrega';
+      console.log('Formatting payment method:', metodo);
+      const methods = {
+        deposito: 'Depósito bancario',
+        contraentrega: 'Pago contra entrega',
+        tarjeta: 'Tarjeta de crédito/débito'
+      };
+      return methods[metodo] || metodo;
+    },
+    
+    formatEstado(estado) {
+      console.log('Formatting status:', estado);
+      const estados = {
+        pendiente: 'Pendiente',
+        completado: 'Completado',
+        cancelado: 'Cancelado',
+        enviado: 'Enviado',
+        entregado: 'Entregado'
+      };
+      return estados[estado] || estado;
+    },
+    formatFechaSimple(fechaISO) {
+  const fecha = new Date(fechaISO);
+  return fecha.toLocaleDateString('es-GT', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+},
+    async getComprobanteUrl(filename) {
+      console.log('Getting comprobante URL for:', filename);
+      try {
+        const ref = storageRef(storage, `comprobantes/${filename}`);
+        const url = await getDownloadURL(ref);
+        console.log('Comprobante URL:', url);
+        return url;
+      } catch (error) {
+        console.error("Error al obtener comprobante:", error);
+        return '#';
+      }
     },
     
     verDetalle(ordenId) {
-  this.$router.push({ 
-    path: `/orden/${ordenId}` 
-    // O si prefieres usar el nombre:
-    // name: 'DetalleOrden',
-    // params: { id: ordenId }
-  });
-}
+      console.log('Viewing details for order:', ordenId);
+      this.$router.push({ path: `/orden/${ordenId}` });
+    },
+    
+    async cancelOrder(orderId) {
+      console.log('Attempting to cancel order:', orderId);
+      try {
+        const confirm = window.confirm('¿Estás seguro que deseas cancelar esta orden?');
+        if (!confirm) {
+          console.log('Order cancellation cancelled by user');
+          return;
+        }
+        
+        console.log('Updating order status to "cancelado"...');
+        await updateDoc(doc(db, 'ordenes', orderId), {
+          estado: 'cancelado',
+          'historialEstados': [
+            {
+              estadoAnterior: 'pendiente',
+              estadoNuevo: 'cancelado',
+              fecha: new Date().toISOString(),
+              usuario: {
+                id: auth.currentUser.uid,
+                email: auth.currentUser.email,
+                nombre: auth.currentUser.displayName || 'Usuario'
+              }
+            }
+          ]
+        });
+        
+        console.log('Order successfully cancelled');
+        this.toast.success('Orden cancelada exitosamente');
+        await this.cargarOrdenes(auth.currentUser.email);
+      } catch (error) {
+        console.error('Error cancelling order:', error);
+        this.toast.error(`Error al cancelar orden: ${error.message}`);
+      }
+    },
+    
+    openReviewModal(product) {
+      console.log('Opening review modal for product:', product);
+      this.currentProduct = product;
+      this.currentRating = 0;
+      this.reviewText = '';
+      this.showReviewModal = true;
+    },
+    
+    closeReviewModal() {
+      console.log('Closing review modal');
+      this.showReviewModal = false;
+    },
+    
+    setRating(rating) {
+      console.log('Setting rating to:', rating);
+      this.currentRating = rating;
+    },
+    
+    async submitReview() {
+      console.log('Submitting review. Rating:', this.currentRating, 'Text:', this.reviewText);
+      if (this.currentRating === 0) {
+        console.log('No rating selected, showing warning');
+        this.toast.warning('Por favor selecciona una calificación');
+        return;
+      }
+      
+      try {
+        console.log('Saving review for product:', this.currentProduct.id);
+        // Aquí implementar la lógica para guardar la valoración
+        
+        this.toast.success('¡Gracias por tu valoración!');
+        this.closeReviewModal();
+      } catch (error) {
+        console.error('Error submitting review:', error);
+        this.toast.error(`Error al enviar valoración: ${error.message}`);
+      }
+    }
   }
 };
 </script>
 
+
+
 <style scoped>
-.historial-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.not-authenticated {
-  text-align: center;
-  padding: 2rem;
+/* Estilos para la versión simplificada */
+.orden-card-simple {
+  display: flex;
+  align-items: center;
   background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.not-authenticated h2 {
-  color: #2c3e50;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  padding: 1rem;
   margin-bottom: 1rem;
+  transition: transform 0.2s;
 }
 
-.auth-button {
-  padding: 0.75rem 1.5rem;
+.orden-card-simple:hover {
+  transform: translateY(-2px);
+}
+
+.orden-imagen {
+  width: 80px;
+  height: 80px;
+  margin-right: 1rem;
+  flex-shrink: 0;
+}
+
+.orden-imagen img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   border-radius: 4px;
-  text-decoration: none;
-  font-weight: bold;
-  transition: all 0.3s ease;
-  display: inline-block;
 }
 
-.auth-button.login {
-  background-color: #42b983;
-  color: white;
+.orden-info-simple {
+  flex-grow: 1;
 }
 
-.loading {
-  text-align: center;
-  padding: 2rem;
-  color: #666;
-}
-
-.no-orders {
-  text-align: center;
-  padding: 2rem;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.btn-comprar {
-  display: inline-block;
-  margin-top: 1rem;
-  padding: 0.75rem 1.5rem;
-  background-color: #42b983;
-  color: white;
-  border-radius: 4px;
-  text-decoration: none;
-  font-weight: bold;
-}
-
-.orden-card {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-  margin-bottom: 2rem;
-  overflow: hidden;
-}
-
-.orden-header {
-  padding: 1rem 1.5rem;
-  background: #f9f9f9;
-  border-bottom: 1px solid #eee;
+.orden-header-simple {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
+  margin-bottom: 0.5rem;
 }
 
-.orden-header h2 {
+.orden-header-simple h3 {
   margin: 0;
-  font-size: 1.25rem;
-  color: #2c3e50;
+  font-size: 1rem;
+  color: #333;
 }
 
-.estado {
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.875rem;
-  font-weight: bold;
+.fecha-simple {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.orden-estado-simple .estado {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
 .estado.pendiente {
@@ -250,104 +531,369 @@ export default {
   color: #721c24;
 }
 
-.fecha {
+.btn-detalle-simple {
+  background: none;
+  border: none;
+  color: #42b983;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.btn-detalle-simple:hover {
+  color: #3aa876;
+}
+.historial-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.not-authenticated {
+  text-align: center;
+  padding: 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* Estilos para filtros y búsqueda */
+.filters-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  align-items: center;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 250px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.search-box i {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
   color: #666;
-  font-size: 0.875rem;
 }
 
-.orden-body {
-  padding: 1.5rem;
-}
-
-.orden-info {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  margin-bottom: 1.5rem;
-}
-
-.orden-info h3 {
-  margin-top: 0;
-  margin-bottom: 1rem;
-  font-size: 1.1rem;
-  color: #42b983;
-}
-
-.orden-productos {
-  border-top: 1px solid #eee;
-  padding-top: 1.5rem;
-}
-
-.orden-productos h3 {
-  margin-top: 0;
-  margin-bottom: 1rem;
-  font-size: 1.1rem;
-  color: #42b983;
-}
-
-.producto-item {
+.filter-group {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem 0;
+  gap: 0.5rem;
+}
+
+.filter-group label {
+  font-weight: 500;
+  color: #555;
+}
+
+.filter-group select {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+}
+
+/* Estilos mejorados para las tarjetas de orden */
+.orden-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+  margin-bottom: 2rem;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.orden-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+}
+
+.order-status-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-timeline {
+  position: relative;
+  cursor: pointer;
+  color: #666;
+}
+
+.status-timeline:hover {
+  color: #42b983;
+}
+
+.timeline-details {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  background: white;
+  padding: 1rem;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  z-index: 10;
+  min-width: 250px;
+}
+
+.timeline-item {
+  padding: 0.5rem 0;
   border-bottom: 1px solid #eee;
 }
 
-.producto-img {
-  width: 60px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: 4px;
+.timeline-item:last-child {
+  border-bottom: none;
 }
 
-.producto-info {
-  flex: 1;
-}
-
-.nombre {
-  margin: 0;
-  font-weight: bold;
-}
-
-.cantidad {
-  margin: 0.25rem 0 0;
+.timeline-date {
+  display: block;
+  font-size: 0.75rem;
   color: #666;
-  font-size: 0.875rem;
 }
 
-.subtotal {
+.timeline-status {
   font-weight: bold;
+  color: #2c3e50;
 }
 
+.timeline-user {
+  font-size: 0.8rem;
+  color: #42b983;
+}
+
+/* Estilos para productos */
+.product-actions {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-review {
+  background: #ffc107;
+  color: #333;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.btn-review:hover {
+  background: #e0a800;
+}
+
+.btn-buy-again {
+  background: #42b983;
+  color: white;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.btn-buy-again:hover {
+  background: #3aa876;
+}
+
+/* Estilos para el footer de la orden */
 .orden-footer {
+  display: flex;
+  justify-content: space-between;
   padding: 1rem 1.5rem;
   background: #f9f9f9;
   border-top: 1px solid #eee;
-  text-align: right;
 }
 
-.btn-detalle {
-  padding: 0.5rem 1rem;
-  background-color: #42b983;
+.btn-cancel {
+  background: #dc3545;
   color: white;
   border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-cancel:hover {
+  background: #c82333;
+}
+
+.btn-comprobante {
+  background: #17a2b8;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-comprobante:hover {
+  background: #138496;
+}
+
+/* Paginación */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.page-btn {
+  background: #42b983;
+  color: white;
+  border: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-weight: 500;
+  color: #555;
+}
+
+/* Modal de valoración */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.review-modal {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+}
+
+.rating-stars {
+  margin: 1rem 0;
+  font-size: 2rem;
+  color: #ddd;
+  cursor: pointer;
+}
+
+.rating-stars .fa-star {
+  margin: 0 0.25rem;
+}
+
+.rating-stars .active {
+  color: #ffc107;
+}
+
+.review-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin: 1rem 0;
+  resize: vertical;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.btn-submit {
+  background: #42b983;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
 }
 
-.btn-detalle:hover {
-  background-color: #3aa876;
+.btn-submit:hover {
+  background: #3aa876;
 }
 
+.btn-cancel {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-cancel:hover {
+  background: #5a6268;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  .orden-info {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
+  .filters-container {
+    flex-direction: column;
+    align-items: stretch;
   }
   
-  .producto-item {
-    flex-wrap: wrap;
+  .orden-info {
+    grid-template-columns: 1fr;
+  }
+  
+  .orden-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .orden-footer button, 
+  .orden-footer a {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>
