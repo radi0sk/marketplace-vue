@@ -12,7 +12,10 @@
 
       <!-- Carrito de compras (visible para todos) -->
       <div class="navbar-item">
-        <router-link to="/cart">Carrito</router-link>
+        <router-link to="/cart">
+          Carrito
+          <span v-if="cartItemCount > 0" class="cart-count">{{ cartItemCount }}</span>
+        </router-link>
       </div>
 
       <!-- Opciones para usuarios autenticados -->
@@ -49,6 +52,7 @@
 import { auth, db } from "@/services/firebase";
 import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
+import { mapGetters } from 'vuex'; // Importa mapGetters
 
 export default {
   name: "AppNavbar",
@@ -103,6 +107,9 @@ export default {
       }
     },
   },
+  computed: {
+    ...mapGetters(['cartItemCount']), // Mapea el getter cartItemCount del store
+  },
 };
 </script>
 
@@ -114,6 +121,16 @@ export default {
   padding: 1rem;
   background-color: #42b983;
   color: white;
+}
+
+
+.cart-count {
+  background-color: red;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 0.8em;
+  margin-left: 5px;
 }
 
 .navbar-brand a {

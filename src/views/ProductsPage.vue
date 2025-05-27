@@ -151,6 +151,7 @@ import {
 import { mapActions } from 'vuex';
 import { useToast } from "vue-toastification";
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import AddedToCartToast from '@/components/toasts/AddedToCartToast.vue';
 
 export default {
   name: 'ProductsPage',
@@ -242,9 +243,12 @@ export default {
     async addToCartWithNotification(product) {
       try {
         await this.addToCart(product);
-        this.toast.success(`${product.name} agregado al carrito`, {
-          position: "top-center"
-        });
+      this.toast.success({
+        component: AddedToCartToast,
+        props: {
+          message: `"${product.name}" agregado al carrito!`
+        }
+      });
       } catch (error) {
         this.toast.error('Error al agregar producto al carrito', {
           position: "top-center"

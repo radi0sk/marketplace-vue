@@ -102,7 +102,7 @@
 import { db, auth } from "@/services/firebase";
 import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { useToast } from "vue-toastification";
-
+import AddedToCartToast from '@/components/toasts/AddedToCartToast.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
 export default {
@@ -142,65 +142,75 @@ export default {
     }));
   },
   methods: {
-    async toggleFavorite(product) {
-    const user = auth.currentUser;
-    if (!user) {
-      this.toast.error("Debes iniciar sesión para agregar a favoritos");
-      return;
+      async toggleFavorite(product) {
+  const user = auth.currentUser;
+  if (!user) {
+    this.toast.error("Debes iniciar sesión para agregar a favoritos");
+    return;
+  }
+
+  try {
+    const userRef = doc(db, "users", user.uid);
+    const productId = product.id;
+    const isFavorite = this.favoriteStatus[productId];
+
+    if (isFavorite) {
+      await updateDoc(userRef, {
+        favorites: arrayRemove(productId)
+      });
+      this.toast.success("Producto eliminado de favoritos");
+    } else {
+      await updateDoc(userRef, {
+        favorites: arrayUnion(productId)
+      });
+      this.toast.success("Producto agregado a favoritos");
     }
 
-    try {
-      const userRef = doc(db, "users", user.uid);
-      const productId = product.id;
-      const isFavorite = this.favoriteStatus[productId];
+    // En Vue 3, simplemente actualiza la propiedad reactiva directamente
+    this.favoriteStatus = {
+      ...this.favoriteStatus,
+      [productId]: !isFavorite
+    };
 
-      if (isFavorite) {
-        // Remover de favoritos
-        await updateDoc(userRef, {
-          favorites: arrayRemove(productId)
-        });
-        this.toast.success("Producto eliminado de favoritos");
-      } else {
-        // Agregar a favoritos
-        await updateDoc(userRef, {
-          favorites: arrayUnion(productId)
-        });
-        this.toast.success("Producto agregado a favoritos");
-      }
+  } catch (error) {
+    console.error("Error updating favorites:", error);
+    this.toast.error("Error al actualizar favoritos");
+  }
+},
 
-      // Actualizar estado local
-      product.isFavorite = !product.isFavorite
+    async checkFavorites() {
+  const user = auth.currentUser;
+  if (!user) return;
 
-    } catch (error) {
-      console.error("Error updating favorites:", error);
-      this.toast.error("Error al actualizar favoritos");
+  try {
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    if (userDoc.exists()) {
+      const favorites = userDoc.data().favorites || [];
+      // Crear un nuevo objeto reactivo
+      this.favoriteStatus = Object.fromEntries(
+        this.products.map(product => [
+          product.id, 
+          favorites.includes(product.id)
+        ])
+      );
     }
-  },
-
-  async checkFavorites() {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    try {
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists()) {
-        const favorites = userDoc.data().favorites || [];
-        // Inicializar el estado de favoritos para todos los productos
-        this.featuredProducts.forEach(product => {
-          this.$set(this.favoriteStatus, product.id, favorites.includes(product.id));
-        });
-      }
-    } catch (error) {
-      console.error("Error checking favorites:", error);
-    }
-  },
+  } catch (error) {
+    console.error("Error checking favorites:", error);
+  }
+},
     goToSearchPage(categoryId) {
       this.$router.push({ path: "/search", query: { category: categoryId } });
     },
     
-    addToCart(product) {
+      addToCart(product) {
       this.$store.dispatch('addToCart', product);
-      this.toast.success(`${product.name} agregado al carrito`); // ¡Funcionará!
+
+      this.toast.success({
+        component: AddedToCartToast,
+        props: {
+          message: `"${product.name}" agregado al carrito!`
+        }
+      });
     }
   },
 };

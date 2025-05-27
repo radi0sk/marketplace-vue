@@ -35,6 +35,8 @@ library.add(
 
 const app = createApp(App);
 
+
+
 // Resto de tu configuración...
 app.use(Toast, {
   position: "top-right",

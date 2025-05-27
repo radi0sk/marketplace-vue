@@ -1,6 +1,8 @@
 <template>
   <div class="order-detail">
-    
+      <router-link to="/purchase-history" class="back-button">
+        <i class="fas fa-arrow-left"></i> Volver al historial
+      </router-link>
     <h1 v-if="orden">Detalle de Pedido #{{ orden.id }}</h1>
     <h1 v-else>Detalle de Pedido</h1>
     
