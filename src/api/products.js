@@ -23,6 +23,28 @@ export const getProducts = async () => {
   }
 };
 
+// Crear nueva categoría con imagen (actualizada para coincidir con tu estructura de datos)
+export const addCategory = async (categoryData) => {
+  try {
+    const docRef = await addDoc(collection(db, 'categories'), {
+      name: categoryData.name,
+      image: categoryData.image || '', // Usa la URL de la imagen o cadena vacía si no hay
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+    
+    // Retornamos el objeto completo de la categoría creada, similar a como lo espera tu componente
+    return {
+      id: docRef.id,
+      name: categoryData.name,
+      image: categoryData.image || ''
+    };
+  } catch (error) {
+    console.error('Error creating category:', error);
+    throw error;
+  }
+};
+
 // Obtener un producto por ID
 export const getProductById = async (id) => {
   try {
@@ -32,6 +54,7 @@ export const getProductById = async (id) => {
     if (docSnap.exists()) {
       return {
         id: docSnap.id,
+        
         ...docSnap.data()
       };
     } else {
@@ -48,6 +71,7 @@ export const createProduct = async (productData) => {
   try {
     const docRef = await addDoc(collection(db, 'products'), {
       ...productData,
+      categoria: productData.categoria,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
@@ -64,6 +88,7 @@ export const updateProduct = async (id, updates) => {
     const productRef = doc(db, 'products', id);
     await updateDoc(productRef, {
       ...updates,
+      categoria: updates.categoria,
       updatedAt: new Date().toISOString()
     });
   } catch (error) {
@@ -73,12 +98,14 @@ export const updateProduct = async (id, updates) => {
 };
 
 // Obtener categorías
+// Obtener categorías (actualizada para coincidir con tu estructura)
 export const getCategories = async () => {
   try {
     const querySnapshot = await getDocs(collection(db, 'categories'));
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
+      name: doc.data().name,
+      image: doc.data().image || ''
     }));
   } catch (error) {
     console.error('Error getting categories:', error);

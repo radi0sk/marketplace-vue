@@ -13,9 +13,9 @@
       </div>
       
       <div class="form-group">
-    <label for="sku">SKU/Código del Producto <small>(opcional - se generará automáticamente)</small></label>
-    <input v-model="product.sku" id="sku" class="form-input" placeholder="Dejar vacío para generación automática" />
-  </div>
+        <label for="sku">SKU/Código del Producto <small>(opcional - se generará automáticamente)</small></label>
+        <input v-model="product.sku" id="sku" class="form-input" placeholder="Dejar vacío para generación automática" />
+      </div>
     </div>
 
     <div class="form-section">
@@ -27,27 +27,27 @@
         </div>
         
         <div class="form-group">
-        <label for="wholesaleMin">Mínimo para compra mayorista</label>
-        <input 
-          v-model="product.wholesaleMin" 
-          type="number" 
-          id="wholesaleMin" 
-          class="form-input" 
-          min="0"
-        />
-      </div>
-      
-      <div class="form-group">
-        <label for="wholesalePrice">Precio mayorista (opcional)</label>
-        <input 
-          v-model="product.wholesalePrice" 
-          type="number" 
-          step="0.01" 
-          id="wholesalePrice" 
-          class="form-input" 
-          min="0"
-        />
-      </div>
+          <label for="wholesaleMin">Mínimo para compra mayorista</label>
+          <input 
+            v-model="product.wholesaleMin" 
+            type="number" 
+            id="wholesaleMin" 
+            class="form-input" 
+            min="0"
+          />
+        </div>
+        
+        <div class="form-group">
+          <label for="wholesalePrice">Precio mayorista (opcional)</label>
+          <input 
+            v-model="product.wholesalePrice" 
+            type="number" 
+            step="0.01" 
+            id="wholesalePrice" 
+            class="form-input" 
+            min="0"
+          />
+        </div>
         
         <div class="form-group">
           <label for="cost">Costo por Unidad</label>
@@ -124,31 +124,17 @@
       </div>
     </div>
 
+    <!-- Sección de Categoría -->
     <div class="form-group">
-    <label for="category">Categoría Principal*</label>
-    <div class="category-selector">
-      <select v-model="product.category" id="category" required class="form-select">
-        <option value="">Selecciona una categoría</option>
-        <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
-        <option value="new_category">+ Agregar nueva categoría</option>
-      </select>
-    </div>
-    
-    <div v-if="showNewCategoryFields" class="new-category-fields">
-      <div class="form-group">
-        <label for="newCategoryName">Nombre de la nueva categoría*</label>
-        <input v-model="newCategory.name" id="newCategoryName" required class="form-input" />
+      <label for="category">Categoría Principal*</label>
+      <div class="category-selector">
+        <select v-model="product.categoria" id="category" required class="form-select">
+          <option value="">Selecciona una categoría</option>
+          <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+          <option value="new_category">+ Agregar nueva categoría</option>
+        </select>
       </div>
-      
-      <div class="form-group">
-        <label for="newCategoryImage">Imagen de la categoría</label>
-        <input type="file" id="newCategoryImage" @change="handleCategoryImageUpload" accept="image/*" class="form-input" />
-      </div>
-      
-      <button type="button" @click="addNewCategory" class="add-btn">Guardar Categoría</button>
-      <button type="button" @click="cancelNewCategory" class="cancel-btn">Cancelar</button>
     </div>
-  </div>
 
     <div class="form-section">
       <h2>Envío y Disponibilidad</h2>
@@ -182,13 +168,68 @@
         {{ isSubmitting ? 'Guardando...' : 'Guardar Producto' }}
       </button>
       <button type="button" @click="resetForm" class="cancel-btn">Limpiar</button>
-      <button type="button"> Cancelar</button>
+      <button type="button"> 
+        <router-link :to="`/admin/products`" class="cancel-btn">Cancelar</router-link>
+      </button>
+    </div>
+
+    <!-- Modal para Nueva Categoría -->
+    <div v-if="showCategoryModal" class="modal-overlay" @click="closeCategoryModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>Agregar Nueva Categoría</h3>
+          <button type="button" @click="closeCategoryModal" class="modal-close">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="newCategoryName">Nombre de la categoría*</label>
+            <input 
+              v-model="newCategory.name" 
+              id="newCategoryName" 
+              class="form-input" 
+              placeholder="Ingresa el nombre de la categoría"
+              ref="categoryNameInput"
+            />
+          </div>
+          
+          <div class="form-group">
+            <label for="newCategoryImage">Imagen de la categoría</label>
+            <input 
+              type="file" 
+              id="newCategoryImage" 
+              @change="handleCategoryImageUpload" 
+              accept="image/*" 
+              class="form-input" 
+            />
+            <small class="upload-hint">Opcional - Imagen representativa de la categoría</small>
+          </div>
+          
+          <div v-if="categoryImagePreview" class="image-preview">
+            <img :src="categoryImagePreview" alt="Preview de categoría" class="category-image-preview" />
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button 
+            type="button" 
+            @click="saveCategoryAndClose" 
+            :disabled="!newCategory.name.trim() || isSavingCategory"
+            class="submit-btn"
+          >
+            {{ isSavingCategory ? 'Guardando...' : 'Guardar Categoría' }}
+          </button>
+          <button type="button" @click="closeCategoryModal" class="cancel-btn">
+            Cancelar
+          </button>
+        </div>
+      </div>
     </div>
   </form>
 </template>
 
 <script>
-import { getCategories } from '@/api/products';
+import { getCategories, addCategory } from '@/api/products';
 import cloudinary from '@/services/cloudinary';
 
 export default {
@@ -212,7 +253,7 @@ export default {
         weight: 0,
         dimensions: '',
         features: [],
-        category: '',
+        categoria: '',
         tags: '',
         shippingType: 'free',
         shippingCost: 0,
@@ -225,25 +266,30 @@ export default {
       default: false
     }
   },
- data() {
-  return {
-    product: JSON.parse(JSON.stringify(this.initialProduct)),
-    categories: [],
-    uploadedImages: [],
-    isSubmitting: false,
-    isDragging: false,
-    showNewCategoryFields: false, // Añadir esta propiedad
-    newCategory: { // Añadir este objeto
-      name: '',
-      image: null
-    }
-  };
-},
-  watch: {
-    'product.category'(newVal) {
-      this.showNewCategoryFields = newVal === 'new_category';
-    }
+  data() {
+    return {
+      product: JSON.parse(JSON.stringify(this.initialProduct)),
+      categories: [],
+      uploadedImages: [],
+      isSubmitting: false,
+      isDragging: false,
+      // Modal de categorías
+      showCategoryModal: false,
+      isSavingCategory: false,
+      newCategory: {
+        name: '',
+        image: null
+      },
+      categoryImagePreview: null
+    };
   },
+ watch: {
+  'product.categoria'(newVal) { // Cambiado de category a categoria
+    if (newVal === 'new_category') {
+      this.openCategoryModal();
+    }
+  }
+},
   async created() {
     try {
       this.categories = await getCategories();
@@ -253,16 +299,122 @@ export default {
     }
   },
   methods: {
+    // Métodos del modal de categorías
+    openCategoryModal() {
+      this.showCategoryModal = true;
+      this.resetCategoryForm();
+      // Enfocar el input después de que el modal se renderice
+      this.$nextTick(() => {
+        if (this.$refs.categoryNameInput) {
+          this.$refs.categoryNameInput.focus();
+        }
+      });
+    },
+    
+    closeCategoryModal() {
+      this.showCategoryModal = false;
+      this.product.categoria = ''; // Resetear la selección
+      this.resetCategoryForm();
+    },
+    
+    resetCategoryForm() {
+      this.newCategory = {
+        name: '',
+        image: null
+      };
+      this.categoryImagePreview = null;
+    },
+    
+    handleCategoryImageUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        // Validar que sea una imagen
+        if (!file.type.startsWith('image/')) {
+          this.$emit('error', 'Por favor selecciona un archivo de imagen válido');
+          return;
+        }
+        
+        // Validar tamaño (máx 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          this.$emit('error', 'La imagen no puede ser mayor a 5MB');
+          return;
+        }
+        
+        this.newCategory.image = file;
+        
+        // Crear preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          this.categoryImagePreview = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    },
+    
+    async saveCategoryAndClose() {
+      if (!this.newCategory.name.trim()) {
+        this.$emit('error', 'El nombre de la categoría es requerido');
+        return;
+      }
+      
+      this.isSavingCategory = true;
+      
+      try {
+        let imageUrl = null;
+        
+        // Subir imagen si existe
+        if (this.newCategory.image) {
+          try {
+            imageUrl = await cloudinary.uploadImage(this.newCategory.image);
+          } catch (error) {
+            console.warn('Error al subir imagen de categoría:', error);
+            // Continúa sin imagen si falla la subida
+          }
+        }
+        
+        // Crear objeto de categoría
+        const categoryData = {
+          name: this.newCategory.name.trim(),
+          image: imageUrl || ''
+        };
+        
+        // Aquí deberías llamar a tu API para guardar la categoría
+        // Ejemplo usando la función addCategory que deberías implementar
+        const savedCategory = await addCategory(categoryData);
+        
+        // Agregar a la lista local
+        this.categories.push(savedCategory);
+        
+        // Seleccionar la nueva categoría
+        this.product.categoria = savedCategory.id;
+        
+        // Cerrar modal
+        this.showCategoryModal = false;
+        this.resetCategoryForm();
+        
+        this.$emit('info', 'Categoría creada exitosamente');
+        
+      } catch (error) {
+        console.error('Error al guardar categoría:', error);
+        this.$emit('error', `Error al guardar la categoría: ${error.message}`);
+      } finally {
+        this.isSavingCategory = false;
+      }
+    },
+
+    // Métodos existentes
     triggerFileInput() {
       this.$refs.fileInput.click();
     },
+    
     async handleImageUpload(event) {
       const files = event.target.files;
       if (!files.length) return;
       
       await this.processFiles(files);
-      this.$refs.fileInput.value = ''; // Reset input
+      this.$refs.fileInput.value = '';
     },
+    
     async handleDrop(event) {
       this.isDragging = false;
       const files = event.dataTransfer.files;
@@ -270,9 +422,11 @@ export default {
       
       await this.processFiles(files);
     },
+    
     dragOver() {
       this.isDragging = true;
     },
+    
     async processFiles(files) {
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
       const validFiles = Array.from(files).filter(file => 
@@ -283,7 +437,6 @@ export default {
         this.$emit('error', 'Algunos archivos no son imágenes válidas o son demasiado grandes (máx. 5MB)');
       }
       
-      // Limitar a 10 imágenes
       const remainingSlots = 10 - this.uploadedImages.length;
       const filesToProcess = validFiles.slice(0, remainingSlots);
       
@@ -292,6 +445,7 @@ export default {
         this.uploadedImages.push({ file, preview, isMain: false });
       }
     },
+    
     removeImage(index) {
       URL.revokeObjectURL(this.uploadedImages[index].preview);
       this.uploadedImages.splice(index, 1);
@@ -301,149 +455,114 @@ export default {
       this.uploadedImages.forEach((img, i) => {
         img.isMain = i === index;
       });
-      // Move main image to first position
       const mainImg = this.uploadedImages.splice(index, 1)[0];
       this.uploadedImages.unshift(mainImg);
     },
-     handleCategoryImageUpload(event) {
-    const file = event.target.files[0];
-    if (file) {
-      this.newCategory.image = file;
-    }
-  },
-
-  addNewCategory() {
-    if (!this.newCategory.name) {
-      this.$emit('error', 'El nombre de la categoría es requerido');
-      return;
-    }
     
-    // Aquí deberías implementar la lógica para guardar la nueva categoría
-    // Por ejemplo, llamar a una API y luego actualizar la lista de categorías
-    
-    // Ejemplo:
-    const newCat = {
-      id: Date.now().toString(), // ID temporal
-      name: this.newCategory.name
-    };
-    
-    this.categories.push(newCat);
-    this.product.category = newCat.id;
-    this.cancelNewCategory();
-  },
-
-  cancelNewCategory() {
-    this.showNewCategoryFields = false;
-    this.newCategory = { name: '', image: null };
-    this.product.category = '';
-  },
     addFeature() {
       this.product.features.push({ name: '', value: '' });
     },
+    
     removeFeature(index) {
       this.product.features.splice(index, 1);
     },
+    
     generateSKU() {
-      // Genera un SKU basado en la marca, categoría y timestamp
       const brandPrefix = this.product.brand 
         ? this.product.brand.substring(0, 3).toUpperCase() 
         : 'GEN';
-      const categoryCode = this.product.category 
-        ? this.categories.find(c => c.id === this.product.category)?.name.substring(0, 3).toUpperCase() 
+      const categoryCode = this.product.categoria 
+        ? this.categories.find(c => c.id === this.product.categoria)?.name.substring(0, 3).toUpperCase() 
         : 'PROD';
       const timestamp = Date.now().toString().slice(-4);
       
       return `${brandPrefix}-${categoryCode}-${timestamp}`;
     },
+    
     resetForm() {
       this.product = JSON.parse(JSON.stringify(this.initialProduct));
       this.uploadedImages.forEach(img => URL.revokeObjectURL(img.preview));
       this.uploadedImages = [];
     },
-    async uploadImages() // Método corregido para ProductForm.vue
-
- {
-  const uploadedUrls = [];
-  let hasFailures = false;
-  
-  try {
-    for (const img of this.uploadedImages) {
+    
+    async uploadImages() {
+      const uploadedUrls = [];
+      let hasFailures = false;
+      
       try {
-        const url = await cloudinary.uploadImage(img.file);
-        if (url) {
-          uploadedUrls.push(url);
-        } else {
-          hasFailures = true;
-          console.error('URL de imagen no recibida');
+        for (const img of this.uploadedImages) {
+          try {
+            const url = await cloudinary.uploadImage(img.file);
+            if (url) {
+              uploadedUrls.push(url);
+            } else {
+              hasFailures = true;
+              console.error('URL de imagen no recibida');
+            }
+          } catch (error) {
+            hasFailures = true;
+            console.error('Error al subir imagen específica:', error);
+            this.$emit('error', `Error al subir una imagen: ${error.message}`);
+          }
         }
+        
+        if (hasFailures && uploadedUrls.length === 0) {
+          throw new Error('No se pudo subir ninguna imagen');
+        }
+        
+        return uploadedUrls;
       } catch (error) {
-        hasFailures = true;
-        console.error('Error al subir imagen específica:', error);
-        this.$emit('error', `Error al subir una imagen: ${error.message}`);
+        console.error('Error general subiendo imágenes:', error);
+        throw error;
       }
-    }
+    },
     
-    if (hasFailures && uploadedUrls.length === 0) {
-      throw new Error('No se pudo subir ninguna imagen');
-    }
-    
-    return uploadedUrls;
-  } catch (error) {
-    console.error('Error general subiendo imágenes:', error);
-    throw error;
-  }
-},
-    // Parte del método submitProduct corregida
-
-// Parte del método submitProduct corregida
-
-async submitProduct() {
-  this.isSubmitting = true;
-  try {
-    // Validación básica
-    if (!this.product.name || !this.product.description || !this.product.price || !this.product.category) {
-      throw new Error('Por favor complete todos los campos requeridos');
-    }
-    
-    if (!this.product.sku) {
-      this.product.sku = this.generateSKU();
-    }
-    
-    // Procesar imágenes
-    let imageUrls = [];
-    if (this.uploadedImages.length > 0) {
+    async submitProduct() {
+      this.isSubmitting = true;
       try {
-        imageUrls = await this.uploadImages();
+        if (!this.product.name || !this.product.description || !this.product.price || !this.product.categoria) {
+          throw new Error('Por favor complete todos los campos requeridos');
+        }
+        
+        if (!this.product.sku) {
+          this.product.sku = this.generateSKU();
+        }
+        
+        let imageUrls = [];
+        if (this.uploadedImages.length > 0) {
+          try {
+            imageUrls = await this.uploadImages();
+          } catch (error) {
+            throw new Error(`Error al subir las imágenes: ${error.message}`);
+          }
+        }
+        
+        const productData = {
+          ...this.product,
+          categoria: this.product.categoria,
+          features: this.product.features.filter(f => f.name && f.value),
+          tags: this.product.tags ? this.product.tags.split(',').map(tag => tag.trim()).filter(tag => tag) : [],
+          images: imageUrls,
+          mainImage: imageUrls[0] || null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        this.$emit('product-submitted', productData);
       } catch (error) {
-        // Si hay error en la carga de imágenes pero es requerido tener al menos una
-        // entonces lanzamos error y detenemos el proceso
-        throw new Error(`Error al subir las imágenes: ${error.message}`);
+        console.error("Error en el formulario:", error);
+        this.$emit('error', error.message);
+      } finally {
+        this.isSubmitting = false;
       }
     }
-    
-    // Preparar datos para enviar
-    const productData = {
-      ...this.product,
-      features: this.product.features.filter(f => f.name && f.value),
-      tags: this.product.tags ? this.product.tags.split(',').map(tag => tag.trim()).filter(tag => tag) : [],
-      images: imageUrls,
-      mainImage: imageUrls[0] || null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    this.$emit('product-submitted', productData);
-  } catch (error) {
-    console.error("Error en el formulario:", error);
-    this.$emit('error', error.message);
-  } finally {
-    this.isSubmitting = false;
-  }
-}
   },
+  
   beforeUnmount() {
-    // Limpiar URLs de previsualización
     this.uploadedImages.forEach(img => URL.revokeObjectURL(img.preview));
+    if (this.categoryImagePreview) {
+      URL.revokeObjectURL(this.categoryImagePreview);
+    }
   }
 };
 </script>
@@ -678,5 +797,86 @@ async submitProduct() {
 
 .hidden-input {
   display: none;
+}
+
+/* Estilos del Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  min-width: 500px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.3rem;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  color: #333;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-footer {
+  padding: 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.image-preview {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.category-image-preview {
+  max-width: 200px;
+  max-height: 150px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #ddd;
 }
 </style>

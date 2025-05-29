@@ -82,7 +82,7 @@
         "wK1wdfpMEduLoZoi1uDx": { // ID del documento de producto
           "availability": "in_stock",
           "brand": "generica",
-          "category": "l2PP23kUc12GPAt8VFQJ", // ID de la categoría a la que pertenece
+          "categoria": "l2PP23kUc12GPAt8VFQJ", // ID de la categoría a la que pertenece
           "comparePrice": 0,
           "cost": 6,
           "createdAt": "2025-05-22T22:17:48.799Z",

@@ -54,7 +54,7 @@
           
           product.value = {
             ...response,
-            category: response.category?.id || ''
+            category: response.categoria?.id || ''
           };
           
         } catch (err) {
