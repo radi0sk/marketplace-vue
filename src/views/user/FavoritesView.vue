@@ -138,4 +138,4 @@ export default {
     padding: 0 1rem;
   }
 }
-</style>
+</style>|
