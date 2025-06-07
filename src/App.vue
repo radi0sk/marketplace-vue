@@ -21,7 +21,7 @@ export default {
   name: "App",
   components: {
     AppNavbar,
-    AppFooter, // Registra el componente Navbar
+    AppFooter, // Registra el componente Navbar listo
   },
 };
 </script>

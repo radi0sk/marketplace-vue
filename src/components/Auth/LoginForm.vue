@@ -27,7 +27,7 @@ export default {
         const result = await signInWithPopup(auth, googleProvider);
         const user = result.user;
 
-        // Verificar si el usuario ya existe en Firestore
+        // Verificar si el usu ario ya existe en Firestore
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (!userDoc.exists()) {
           await setDoc(doc(db, "users", user.uid), {

@@ -12,6 +12,7 @@
         <textarea v-model="product.description" id="description" required class="form-textarea"></textarea>
       </div>
       
+      
       <div class="form-group">
         <label for="sku">SKU/Código del Producto <small>(opcional - se generará automáticamente)</small></label>
         <input v-model="product.sku" id="sku" class="form-input" placeholder="Dejar vacío para generación automática" />

@@ -21,6 +21,7 @@
 export default {
   name: 'AdminDashboard',
   data() {
+    
     return {
       adminLinks: [
         { path: '/admin/products', text: 'Gestión de Productos', icon: 'fas fa-boxes' },

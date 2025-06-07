@@ -114,5 +114,5 @@
   color: #666;
   font-style: italic;
 }
-/* Resto de tus estilos... */
+/* Resto de tus estilos. .. */
 </style>

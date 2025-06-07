@@ -1,7 +1,9 @@
 <template>
   <div class="confirmacion">
     <h1>¡Compra realizada con éxito!</h1>
+    <router-link to="/purchase-history" class="btn-continuar">Historial de Pedidos</router-link>
     <p>Tu número de pedido es: {{ orderId }}</p>
+    
     <router-link to="/" class="btn-continuar">Continuar comprando</router-link>
   </div>
 </template>

@@ -8,7 +8,7 @@
       </div>
     </header>
 
-    <!-- Contenedor principal -->
+    <!-- Contenedor pri ncipal -->
     <main class="main-content">
       <div class="container">
         <!-- Componente de favoritos -->

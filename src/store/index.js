@@ -9,7 +9,7 @@ export default createStore({
     createPersistedState({
       key: 'marketplace_cart', // Key único para localStorage
       paths: ['cart'], // Solo persiste el estado 'cart'
-      storage: window.localStorage, // Opcional (por defecto ya usa localStorage)
+      storage: window.localStorage, // Opcional (por defec to ya usa localStorage)
     })
   ],
   state: {

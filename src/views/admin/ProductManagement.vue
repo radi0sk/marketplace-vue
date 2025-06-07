@@ -22,6 +22,7 @@
 </template>
 
 <script>
+
 import ProductForm from '@/components/admin/ProductForm.vue';
 import ProductList from '@/components/admin/ProductList.vue';
 

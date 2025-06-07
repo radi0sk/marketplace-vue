@@ -233,6 +233,10 @@ export default {
     await this.loadProducts();
     this.loadNotifications();
     await this.checkFavorites();
+    if (this.$route.query.search) {
+    this.searchQuery = this.$route.query.search;
+    this.applySearch();
+  }
   },
   computed: {
     filteredProducts() {

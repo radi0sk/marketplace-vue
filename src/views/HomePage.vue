@@ -9,7 +9,7 @@
       </div>
     </section>
 
-    <!-- Categorías de Productos -->
+    <!-- Categorías de Productos  -->
     <section class="categories">
       <h2>Explorar por Categorías</h2>
       <div class="category-list">
