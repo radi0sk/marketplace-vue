@@ -8,7 +8,7 @@
     </div>
     
     <div v-else>
-      <!-- Filtros y búsqueda -->
+      <!-- Filtros y  búsqueda -->
       <div class="filters-container">
         <div class="search-box">
           <input 

@@ -81,7 +81,7 @@
   </div>
 </section>
 
-      <!-- Sección 3: Método de pago -->
+      <!-- Sección 3 : Método de pago -->
       <section class="metodo-pago">
         <h2>Método de Pago</h2>
         <div class="opciones-pago">

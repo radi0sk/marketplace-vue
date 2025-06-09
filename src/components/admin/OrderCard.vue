@@ -5,6 +5,7 @@
       <div class="order-date">{{ formatDate(order.fecha) }}</div>
     </div>
     
+    
     <div class="customer-info">
       <div class="customer-name">
         <i class="fas fa-user"></i> {{ order.cliente.name }}

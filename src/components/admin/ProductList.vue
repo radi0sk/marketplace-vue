@@ -15,6 +15,7 @@
               class="product-img"
             >
           </div>
+          
           <div class="product-image" v-else>
             <img 
               src="https://res.cloudinary.com/drpa7s0kq/image/upload/v1746550804/yrlq5mnxwhjn4lpx0ma3.png" 

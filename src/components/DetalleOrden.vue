@@ -86,6 +86,7 @@
   import { doc, getDoc } from 'firebase/firestore';
   import { useToast } from "vue-toastification";
   
+  
   export default {
     name: 'DetalleOrden',
     setup() {

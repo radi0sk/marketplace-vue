@@ -9,6 +9,7 @@ export default {
   name: "LoginPage",
   components: {
     LoginForm,
+    
   },
 };
 </script>

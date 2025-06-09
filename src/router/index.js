@@ -1,127 +1,236 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { auth, db } from '@/services/firebase'
+import { doc, getDoc } from 'firebase/firestore'
 
-// Importa tus componentes
-import HomePage               from "../views/HomePage.vue";
-import ShoppingCart           from "../views/ShoppingCart.vue";
+// Importaciones de componentes
+const HomePage = () => import('@/views/HomePage.vue');
+const ProductsPage = () => import('@/views/ProductsPage.vue');
+const ShoppingCart = () => import('@/views/ShoppingCart.vue');
+const LoginPage = () => import('@/views/Auth/LoginPage.vue');
+const Pagar = () => import('@/views/Pagar.vue');
+const Confirmacion = () => import('@/components/Confirmacion.vue');
 
-import ClienteProductDetail   from "@/views/cliente/ClienteProductDetail.vue";
-
-import AdminDashboard         from "@/views/admin/AdminDashboard.vue";
-import ProductManagement      from "@/views/admin/ProductManagement.vue";
-import PopularProducts        from "@/views/admin/PopularProducts.vue";
-import OutOfStockProducts     from "@/views/admin/OutOfStockProducts.vue";
-
-import LoginPage              from "@/views/Auth/LoginPage.vue";
-import ClienteShoppingCart    from "@/components/cliente/ClienteShoppingCart.vue";
-import ClienteCheckoutForm    from "@/components/cliente/ClienteCheckoutForm.vue";
-import ClienteOrderSummary    from "@/components/cliente/ClienteOrderSummary.vue";
-import ProductsPage from '@/views/ProductsPage.vue';
-import Confirmacion from '../components/Confirmacion.vue';
+// Componentes de cliente
+const ClienteProductDetail = () => import('@/views/cliente/ClienteProductDetail.vue');
 
 
-import SearchPage from '@/components/cliente/SearchPage.vue';
+// Componentes de usuario
+const Profile = () => import('@/views/user/Profile.vue');
+const FavoritesView = () => import('@/views/user/FavoritesView.vue');
+const PurchaseHistory = () => import('@/views/user/PurchaseHistory.vue');
+const UserOrderDetail = () => import('@/views/user/OrderDetail.vue');
+
+// Componentes de admin
+const AdminDashboard = () => import('@/views/admin/AdminDashboard.vue');
+const ProductManagement = () => import('@/views/admin/ProductManagement.vue');
+const AddProduct = () => import('@/views/admin/AddProduct.vue');
+const EditProduct = () => import('@/views/admin/EditProduct.vue');
+const OrderManagement = () => import('@/views/admin/OrderManagement.vue');
+const AdminOrderDetail = () => import('@/views/admin/OrderDetail.vue');
+const SalesStatistics = () => import('@/views/admin/SalesStatistics.vue');
 
 
-
-// Define las rutas
 const routes = [
+  // Rutas públicas
   {
     path: "/",
     name: "Home",
     component: HomePage,
+    meta: { title: "Inicio" }
   },
   {
-    path: '/products',  // La URL que quieres manejar
-    name: 'Products',   // Un nombre para referenciarla fácilmente
-    component: ProductsPage,  // El componente que se mostrará
+    path: "/products",
+    name: "Products",
+    component: ProductsPage,
+    meta: { title: "Productos" }
   },
+  {
+    path: "/product/:id",
+    name: "ProductDetail",
+    component: ClienteProductDetail,
+    meta: { title: "Detalle del Producto" }
+  },
+ 
   {
     path: "/cart",
     name: "Cart",
     component: ShoppingCart,
+    meta: { title: "Carrito de Compras" }
   },
   {
-    path: '/search', // Ruta de la página de búsqueda
-    name: 'Search',
-    component: SearchPage, // Asocia esta ruta al componente SearchPage
+    path: "/login",
+    name: "Login",
+    component: LoginPage,
+    meta: { title: "Iniciar Sesión", requiresGuest: true }
   },
-  
-  {
-    path: '/pagar',
-    name: 'Pagar',
-    component: () => import('@/views/Pagar.vue'),
-  },
-  
 
-
-  
-  { path: "/product/:id", component: ClienteProductDetail },
+  // Rutas de usuario autenticado
   {
-    path: '/confirmacion',
-    name: 'Confirmacion',
+    path: "/profile",
+    name: "Profile",
+    component: Profile,
+    meta: { title: "Perfil", requiresAuth: true }
+  },
+  {
+    path: "/favorites",
+    name: "Favorites",
+    component: FavoritesView,
+    meta: { title: "Favoritos", requiresAuth: true }
+  },
+  {
+    path: "/purchase-history",
+    name: "PurchaseHistory",
+    component: PurchaseHistory,
+    meta: { title: "Historial de Compras", requiresAuth: true }
+  },
+  {
+    path: "/orden/:id",
+    name: "UserOrderDetail",
+    component: UserOrderDetail,
+    meta: { title: "Detalle de Orden", requiresAuth: true },
+    props: true
+  },
+  {
+    path: "/pagar",
+    name: "Pagar",
+    component: Pagar,
+    meta: { title: "Pagar", requiresAuth: true }
+  },
+  {
+    path: "/confirmacion",
+    name: "Confirmacion",
     component: Confirmacion,
-    props: true // Esto permite pasar props mediante la ruta
-  },
-  { path: "/cart", component: ClienteShoppingCart },
-  { path: "/checkout", component: ClienteCheckoutForm },
-  { path: "/order-summary", component: ClienteOrderSummary },
-  {
-    path: '/orden/:id',
-    name: 'DetalleOrden',
-    component: () => import('@/views/user/OrderDetail.vue'), // Asegúrate de crear este componente
+    meta: { title: "Confirmación", requiresAuth: true },
     props: true
   },
 
-  { path: "/login", component: LoginPage },
-  { path: "/profile",
-    name: "Profile", component: () => import("@/views/user/Profile.vue"), },
-  { path: "/purchase-history",
-    name: "PurchaseHistory",  component: () => import("@/views/user/PurchaseHistory.vue"),},
+  // Rutas de administrador
   {
-      path: "/favorites",
-      name: "Favorites",
-      component: () => import("@/views/user/FavoritesView.vue"),
-    },
-  {
-      path: "/purchase-history",
-      name: "PurchaseHistory",
-      component: () => import("@/views/user/PurchaseHistory.vue"),
-    },
-    {
-      path: "/admin",
-      component: AdminDashboard,
-      children: [
-        { path: "products", component: ProductManagement },
-        { path: "products/add", component: () => import("@/views/admin/AddProduct.vue") },
-        { 
-          path: "products/edit/:id", 
-          name: "EditProduct",
-          component: () => import("@/views/admin/EditProduct.vue"),
-          props: true
-        },
-        { 
-          path: "orders", 
-          component: () => import("@/views/admin/OrderManagement.vue") 
-        },
-        { 
-          path: "orders/:id", 
-          name: "OrderDetail",
-          component: () => import("@/views/admin/OrderDetail.vue"),
-          props: true
-        },
-        { path: "sales-statistics", component: () => import("@/views/admin/SalesStatistics.vue") },
-        { path: "popular-products", component: PopularProducts },
-        { path: "out-of-stock", component: OutOfStockProducts },
-      ],
-    },
-    
+    path: "/admin",
+    name: "AdminDashboard",
+    component: AdminDashboard,
+    meta: { title: "Panel de Administración", requiresAuth: true, requiresAdmin: true },
+    children: [
+      {
+        path: "products",
+        name: "ProductManagement",
+        component: ProductManagement,
+        meta: { title: "Gestión de Productos" }
+      },
+      // En el children del AdminDashboard
+{
+  path: "brands",
+  name: "BrandManagement",
+  component: () => import('@/views/admin/BrandManagement.vue'),
+  meta: { title: "Gestión de Marcas" }
+},
+{
+  path: "brands/add",
+  name: "AddBrand",
+  component: () => import('@/views/admin/AddBrand.vue'),
+  meta: { title: "Agregar Marca" }
+},
+{
+  path: "brands/edit/:id",
+  name: "EditBrand",
+  component: () => import('@/views/admin/EditBrand.vue'),
+  meta: { title: "Editar Marca" },
+  props: true
+},
+      {
+        path: "products/add",
+        name: "AddProduct",
+        component: AddProduct,
+        meta: { title: "Agregar Producto" }
+      },
+      {
+        path: "products/edit/:id",
+        name: "EditProduct",
+        component: EditProduct,
+        meta: { title: "Editar Producto" },
+        props: true
+      },
+      {
+        path: "orders",
+        name: "OrderManagement",
+        component: OrderManagement,
+        meta: { title: "Gestión de Pedidos" }
+      },
+      {
+        path: "orders/:id",
+        name: "AdminOrderDetail",
+        component: AdminOrderDetail,
+        meta: { title: "Detalle de Pedido" },
+        props: true
+      },
+      {
+        path: "sales-statistics",
+        name: "SalesStatistics",
+        component: SalesStatistics,
+        meta: { title: "Estadísticas de Ventas" }
+      }
+    ]
+  },
 
+  // Redirección para rutas no encontradas
+  {
+    path: "/:pathMatch(.*)*",
+    redirect: "/"
+  }
 ];
 
-// Crea el router
 const router = createRouter({
   history: createWebHistory(),
-  routes, // Asegúrate de que 'routes' esté siendo usado aquí
+  routes,
+  scrollBehavior(to, from, savedPosition) {
+    return savedPosition || { top: 0 };
+  }
+});
+
+// Guardia de navegación para autenticación y roles
+// En index.js, reemplaza el beforeEach actual con este:
+
+router.beforeEach(async (to, from, next) => {
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin);
+  const requiresGuest = to.matched.some(record => record.meta.requiresGuest);
+  
+  // Verificar estado de autenticación
+  const currentUser = await new Promise((resolve) => {
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      unsubscribe();
+      resolve(user);
+    });
+  });
+
+  // Obtener rol del usuario si está autenticado
+  let userRole = null;
+  if (currentUser) {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      userRole = userDoc.exists() ? userDoc.data().role : 'cliente';
+    } catch (error) {
+      console.error('Error obteniendo rol del usuario:', error);
+      userRole = 'cliente';
+    }
+  }
+
+  // Lógica de redirección
+  if (requiresGuest && currentUser) {
+    next('/'); // Usuario autenticado no puede acceder a páginas de invitado
+  } else if (requiresAuth && !currentUser) {
+    next('/login'); // Usuario no autenticado intentando acceder a página protegida
+  } else if (requiresAdmin && userRole !== 'admin') {
+    next('/'); // Usuario no admin intentando acceder a página de admin
+  } else {
+    next(); // Todo en orden, permitir navegación
+  }
+});
+
+// Cambiar el título de la página según la ruta
+router.afterEach((to) => {
+  const title = to.meta.title || 'Marketplace';
+  document.title = `${title} | Marketplace`;
 });
 
 export default router;

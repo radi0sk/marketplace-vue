@@ -15,7 +15,7 @@
       </div>
     </div>
 
-    <!-- Información del producto (derecha) -->
+    <!-- Información del producto  (derecha) -->
     <div class="product-info">
       <div class="product-header">
         <span class="category">{{ product.category }}</span>

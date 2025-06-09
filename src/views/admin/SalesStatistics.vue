@@ -54,7 +54,7 @@
 </template>
 
 <script>
-import { getOrders } from '@/api/orders'; // Importa la función de tu archivo orders.js
+import { getOrders } from '@/api/orders'; // Importa la func ión de tu archivo orders.js
 import Chart from 'chart.js/auto';
 
 export default {

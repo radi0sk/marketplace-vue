@@ -6,7 +6,7 @@
     <h1 v-if="orden">Detalle de Pedido #{{ orden.id }}</h1>
     <h1 v-else>Detalle de Pedido</h1>
     
-    <!-- Asegura todos los accesos a orden con v-if -->
+    <!-- Asegura todos los accesos a orden con  v-if -->
     <div v-if="orden" class="order-status" :class="orden.estado">
       {{ formatEstado(orden.estado) }}
     </div>

@@ -516,7 +516,7 @@ export default {
   }
 }
 
-/* Colores de estados (manteniendo tus originales) */
+/* Colores de estados (manteniendo tus originales ) */
 .status-pendiente {
   background-color: #fff3cd;
   color: #856404;

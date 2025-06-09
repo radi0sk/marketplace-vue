@@ -9,35 +9,41 @@
       </div>
     </section>
 
-    <!-- Categorías de Productos -->
-    <section class="categories">
-      <h2>Explorar por Categorías</h2>
-      <div class="category-list">
-        <!-- Agregar evento de clic a las tarjetas de categoría -->
-        <div
-          class="category-card"
-          v-for="category in categories"
-          :key="category.id"
-          @click="goToSearchPage(category.id)"
-        >
+    <!-- Categorías de Productos  -->
+      <section class="categories">
+    <h2>Explorar por Categorías</h2>
+    <div class="slider-container">
+      <button class="slider-button prev" 
+              @click="scrollSlider('category', -1)" 
+              :disabled="!canScrollPrevCategory">❮</button>
+      <div class="slider-list" ref="categoryList">
+        <div v-for="(category, index) in duplicatedCategories" 
+             :key="`${category.id}-${index}`"
+             class="slider-card"
+             @click="goToSearchPage(category.id)">
           <img :src="category.image" :alt="category.name" />
           <h3>{{ category.name }}</h3>
         </div>
       </div>
-    </section>
-
+      <button class="slider-button next" 
+              @click="scrollSlider('category', 1)"
+              :disabled="!canScrollNextCategory">❯</button>
+    </div>
+  </section>
     <!-- Productos Destacados -->
-    <section class="featured-products">
-      <h2>Productos Destacados</h2>
-      <div class="product-list">
-    <router-link 
-      v-for="product in featuredProducts" 
-      :key="product.id" 
-      :to="`/product/${product.id}`" 
-      class="product-card"
-    >
-     <div class="product-image-container">
-  <img 
+     <section class="featured-products">
+    <h2>Productos Destacados</h2>
+    <div class="slider-container">
+      <button class="slider-button prev" 
+              @click="scrollSlider('product', -1)" 
+              :disabled="!canScrollPrevProduct">❮</button>
+      <div class="slider-list" ref="productList">
+        <router-link v-for="(product, index) in duplicatedProducts" 
+                    :key="`${product.id}-${index}`"
+                    :to="`/product/${product.id}`" 
+                    class="slider-card product-card">
+       <div class="product-image-container">
+     <img 
     :src="product.images && product.images.length > 0 ? product.images[0] : 'ruta/a/imagen/predeterminada.jpg'" 
     :alt="product.name" 
     class="product-image"
@@ -73,8 +79,12 @@
         <p class="description">{{ product.description || 'Descripción no disponible' }}</p>
       </div>
     </router-link>
-  </div>
-    </section>
+      </div>
+      <button class="slider-button next" 
+              @click="scrollSlider('product', 1)"
+              :disabled="!canScrollNextProduct">❯</button>
+    </div>
+  </section>
 
     <!-- Información sobre la Plataforma -->
     <section class="about">
@@ -115,8 +125,13 @@ export default {
       categories: [],
       featuredProducts: [],
       testimonials: [],
-      favoriteStatus: {}
-    };
+      favoriteStatus: {},
+       canScrollPrevCategory: false,
+      canScrollNextCategory: true,
+      canScrollPrevProduct: false,
+      canScrollNextProduct: true,
+      scrollInterval: null
+    }
   },
   setup() {
     const toast = useToast();
@@ -141,7 +156,60 @@ export default {
       ...doc.data(),
     }));
   },
+  computed: {
+    duplicatedCategories() {
+      return [...this.categories, ...this.categories, ...this.categories];
+    },
+    duplicatedProducts() {
+      return [...this.featuredProducts, ...this.featuredProducts, ...this.featuredProducts];
+    }
+  },
   methods: {
+    scrollProducts(direction) {
+    const list = this.$refs.productList; // Asegúrate de que el ref coincida
+    if (list) {
+      list.scrollBy({
+        left: direction * 300, // Ajusta este valor según el ancho de tus cards
+        behavior: 'smooth'
+      });
+    }
+  },    scrollSlider(type, direction) {
+      const list = this.$refs[`${type}List`];
+      if (!list) return;
+      
+      const scrollAmount = direction * (type === 'category' ? 200 : 300);
+      list.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    },
+    checkScroll() {
+      const check = (type) => {
+        const list = this.$refs[`${type}List`];
+        if (list) {
+          this[`canScrollPrev${type.charAt(0).toUpperCase() + type.slice(1)}`] = list.scrollLeft > 0;
+          this[`canScrollNext${type.charAt(0).toUpperCase() + type.slice(1)}`] = 
+            list.scrollLeft < (list.scrollWidth - list.clientWidth - 1);
+        }
+      };
+      
+      check('category');
+      check('product');
+    },
+    startAutoScroll() {
+      this.scrollInterval = setInterval(() => {
+        this.scrollSlider('category', 1);
+        this.scrollSlider('product', 1);
+      }, 3000);
+    },
+ scrollCategories(direction) {
+  const list = this.$refs.categoryList;
+  if (list) { // Verificación añadida
+    list.scrollBy({
+      left: direction * 200,
+      behavior: 'smooth'
+    });
+  }
+},
+
+
       async toggleFavorite(product) {
   const user = auth.currentUser;
   if (!user) {
@@ -199,7 +267,10 @@ export default {
   }
 },
     goToSearchPage(categoryId) {
-      this.$router.push({ path: "/search", query: { category: categoryId } });
+      this.$router.push({ 
+        name: 'Products', 
+        query: { category: categoryId } 
+      });
     },
     
       addToCart(product) {
@@ -213,10 +284,134 @@ export default {
       });
     }
   },
-};
+  mounted() {
+    this.checkScroll();
+    ['categoryList', 'productList'].forEach(ref => {
+      this.$refs[ref]?.addEventListener('scroll', this.checkScroll);
+    });
+    this.startAutoScroll();
+  },
+  beforeUnmount() {
+    clearInterval(this.scrollInterval);
+    ['categoryList', 'productList'].forEach(ref => {
+      this.$refs[ref]?.removeEventListener('scroll', this.checkScroll);
+    });
+  }
+
+}
 </script>
 
 <style scoped>
+/* Añade para responsive: */
+@media (max-width: 768px) {
+  .product-card {
+    width: 200px;
+  }
+
+}
+/* Estilos unificados para sliders */
+.slider-container {
+  position: relative;
+  margin: 1rem 0;
+}
+
+.slider-list {
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding-bottom: 1rem;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.slider-list::-webkit-scrollbar {
+  display: none;
+}
+
+.slider-card {
+  flex: 0 0 auto;
+  width: 250px;
+  scroll-snap-align: start;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem;
+  background-color: #fff;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+}
+
+.slider-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos específicos para categorías */
+.categories .slider-card {
+  width: 180px;
+  text-align: center;
+}
+
+.categories .slider-card img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+/* Estilos para botones de navegación */
+.slider-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  transition: opacity 0.3s;
+}
+
+.slider-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.slider-button.prev {
+  left: 10px;
+}
+
+.slider-button.next {
+  right: 10px;
+}
+
+
+.product-list {
+  display: flex; /* Obligatorio para el slider */
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding-bottom: 1rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Oculta scrollbar en Firefox */
+}
+
+.product-list::-webkit-scrollbar {
+  display: none; /* Oculta scrollbar en Chrome/Safari */
+}
+
+/* Ajusta el tamaño de las cards (opcional) */
+.product-card {
+  flex: 0 0 auto; 
+  width: 250px; /* Ancho fijo para cada producto */
+  /* ... (mantén tus estilos actuales de hover, etc.) ... */
+}
+
 
 .product-actions {
   position: absolute;
@@ -298,11 +493,69 @@ export default {
   background-color: #3aa876;
 }
 
-.categories,
-.featured-products,
-.about,
-.testimonials {
+/* Estilos para el slider de categorías */
+
+
+.prev {
+  left: 10px;
+}
+
+.next {
+  right: 10px;
+}
+.categories {
   margin: 2rem 0;
+  overflow: hidden; /* Oculta el scroll fuera del contenedor */
+}
+
+.category-slider-container {
+  position: relative;
+}
+
+.category-list {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto; /* Permite scroll horizontal */
+  scroll-behavior: smooth; /* Desplazamiento suave */
+  padding-bottom: 1rem; /* Espacio para evitar cortar sombras */
+  -webkit-overflow-scrolling: touch; /* Mejor scroll en móviles */
+}
+.category-list,
+.product-list {
+  will-change: transform; /* Optimiza animaciones */
+}
+
+/* Oculta la barra de scroll (opcional) */
+.category-list::-webkit-scrollbar {
+  display: none;
+}
+
+.category-card {
+  flex: 0 0 auto; /* Evita que las cards se estiren */
+  width: 250px; /* Ancho fijo para cada categoría */
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem;
+  background-color: #fff;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.category-card:hover {
+  transform: translateY(-5px);
+}
+
+.category-card img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.category-card h3 {
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  text-align: center;
 }
 
 h2 {
@@ -310,8 +563,6 @@ h2 {
   margin-bottom: 1rem;
 }
 
-.category-list,
-.product-list,
 .testimonial-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

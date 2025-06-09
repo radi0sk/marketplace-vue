@@ -87,7 +87,7 @@
   .notification.warning { background-color: #ffc107; color: #333; }
   .notification.info { background-color: #17a2b8; }
   
-  /* Transition effects */
+  /* Transition effes */
   .fade-enter-active, .fade-leave-active {
     transition: opacity 0.5s, transform 0.5s;
   }

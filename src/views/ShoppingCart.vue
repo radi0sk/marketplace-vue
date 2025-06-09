@@ -24,7 +24,7 @@
       </div>
       <div class="cart-summary">
         <h3>Total del Carrito: ${{ cartTotal.toFixed(2) }}</h3>
-        <!-- Botón para redirigir a la vista de Pagar -->
+        <!-- Botón para redirigir a la  vista de Pagar -->
         <button @click="irAPagar" class="checkout-button">Finalizar Compra</button>
       </div>
     </div>

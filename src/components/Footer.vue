@@ -3,21 +3,19 @@
       <div class="footer-content">
         <div class="footer-section">
           <h3>Contacto</h3>
-          <p>Email: contacto@marketplace.com</p>
-          <p>Teléfono: +123 456 7890</p>
+          <p>Email: pedrora3@gmail.com</p>
+          <p>Teléfono: +502 3846 5461</p>
         </div>
         <div class="footer-section">
           <h3>Redes Sociales</h3>
           <ul class="social-links">
             <li>
-              <a href="https://facebook.com" target="_blank" rel="noopener">Facebook</a>
+              <a href="https://www.facebook.com/profile.php?id=61562277812775" target="_blank" rel="noopener">Facebook</a>
             </li>
             <li>
-              <a href="https://twitter.com" target="_blank" rel="noopener">Twitter</a>
+              <a href="https://maps.app.goo.gl/utG8hxwFetQzPszVA" target="_blank" rel="noopener">Maps</a>
             </li>
-            <li>
-              <a href="https://instagram.com" target="_blank" rel="noopener">Instagram</a>
-            </li>
+          
           </ul>
         </div>
         <div class="footer-section">

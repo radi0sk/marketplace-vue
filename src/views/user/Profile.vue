@@ -10,7 +10,7 @@
     </div>
 
     <div v-if="user" class="profile-content">
-      <!-- Sección de información básica -->
+      <!-- Sección de información  básica -->
       <div class="profile-section">
         <h3>Información Básica</h3>
         <div class="avatar-section">

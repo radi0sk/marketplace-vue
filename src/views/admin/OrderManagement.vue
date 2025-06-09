@@ -18,6 +18,7 @@
       <i class="fas fa-spinner fa-spin"></i> Cargando pedidos...
     </div>
     
+    
     <div v-else class="order-container">
       <div v-if="orders.length === 0" class="empty-message">
         No hay pedidos con el filtro seleccionado

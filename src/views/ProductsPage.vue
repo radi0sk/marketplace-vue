@@ -233,6 +233,14 @@ export default {
     await this.loadProducts();
     this.loadNotifications();
     await this.checkFavorites();
+     if (this.$route.query.category) {
+      this.activeCategory = this.$route.query.category;
+    }
+   
+    if (this.$route.query.search) {
+    this.searchQuery = this.$route.query.search;
+    this.applySearch();
+  }
   },
   computed: {
     filteredProducts() {
@@ -415,6 +423,11 @@ export default {
     filterByCategory(categoryId) {
       this.activeCategory = categoryId;
       this.currentPage = 1;
+      this.$router.replace({
+        query: {
+          ...this.$route.query,
+          category: categoryId || undefined // Si es null, lo removemos
+        }});
     },
     
     getProductCountByCategory(categoryId) {
