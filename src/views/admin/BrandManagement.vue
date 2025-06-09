@@ -3,7 +3,7 @@
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold text-gray-800">Gestión de Marcas</h1>
       <router-link 
-        to="/admin/brands/add"
+        to="/brands/add"
         class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition"
       >
         Agregar Nueva Marca

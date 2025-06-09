@@ -96,14 +96,20 @@
   </div>
 </template>
 
+
+
 <script>
-import { db, storage } from '@/services/firebase'
+import { db } from '@/services/firebase'
 import { collection, addDoc } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { toast } from 'vue-toastification'
+import { uploadImageToCloudinary } from '@/services/cloudinary'
+import { useToast } from "vue-toastification"  // Cambio en la importación
 
 export default {
   name: 'AddBrand',
+  setup() {
+    const toast = useToast()  // Inicialización del toast
+    return { toast }  // Hacemos el toast disponible en el componente
+  },
   data() {
     return {
       form: {
@@ -138,10 +144,13 @@ export default {
     },
     async uploadImage() {
       if (!this.imageFile) return null
-      
-      const storageRef = ref(storage, `brands/${Date.now()}_${this.imageFile.name}`)
-      await uploadBytes(storageRef, this.imageFile)
-      return await getDownloadURL(storageRef)
+      try {
+        return await uploadImageToCloudinary(this.imageFile)
+      } catch (error) {
+        this.toast.error('Error al subir la imagen')  // Usamos this.toast
+        console.error('Error uploading image:', error)
+        throw error
+      }
     },
     async submitForm() {
       this.loading = true
@@ -157,10 +166,10 @@ export default {
         // Guardar en Firestore
         await addDoc(collection(db, 'brands'), this.form)
         
-        toast.success('Marca agregada correctamente')
+        this.toast.success('Marca agregada correctamente')  // Usamos this.toast
         this.$router.push({ name: 'BrandManagement' })
       } catch (error) {
-        toast.error('Error al guardar la marca')
+        this.toast.error('Error al guardar la marca')  // Usamos this.toast
         console.error('Error adding brand:', error)
       } finally {
         this.loading = false
