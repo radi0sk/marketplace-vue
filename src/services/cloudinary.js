@@ -48,5 +48,6 @@ export const deleteImageFromCloudinary = async (publicId) => {
 // Exportación por defecto para compatibilidad (opcional)
 export default {
   uploadImage: uploadImageToCloudinary,
+  
   deleteImage: deleteImageFromCloudinary,
 };
