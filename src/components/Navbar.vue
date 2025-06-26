@@ -57,20 +57,32 @@
       </div>
 
       <!-- Navegación principal -->
-      <nav class="main-nav">
-        <router-link to="/products" class="nav-link">
-          <i class="fas fa-seedling"></i>
-          <span>Productos</span>
-        </router-link>
+     <nav class="main-nav">
+    <router-link to="/products" class="nav-link">
+      <i class="fas fa-seedling"></i>
+      <span>Productos</span>
+    </router-link>
 
-       <router-link to="/cart" class="nav-link cart-link" v-if="userRole == 'admin' || userRole === 'cliente'">
-  <font-awesome-icon 
-    :icon="['fas', 'shopping-cart']" 
-    :class="{ 'has-items': cartItemCount > 0 }" 
-  />
-  <span v-if="cartItemCount > 0" class="cart-badge">{{ cartItemCount }}</span>
-</router-link>
-      </nav>
+    <router-link to="/pagos" class="nav-link">
+      <span>Pagos</span>
+    </router-link>
+    <router-link to="/envioPaqueteria" class="nav-link">
+      <span>Envío</span>
+    </router-link>
+    <router-link to="/contacto" class="nav-link">
+      <span>Contacto</span>
+    </router-link>
+    <router-link to="/nosotros" class="nav-link">
+      <span>Nosotros</span>
+    </router-link>
+    <router-link to="/cart" class="nav-link cart-link" v-if="userRole == 'admin' || userRole === 'cliente'">
+      <font-awesome-icon
+        :icon="['fas', 'shopping-cart']"
+        :class="{ 'has-items': cartItemCount > 0 }"
+      />
+      <span v-if="cartItemCount > 0" class="cart-badge">{{ cartItemCount }}</span>
+    </router-link>
+</nav>
 
       <!-- Panel de usuario -->
       <div class="user-section">
