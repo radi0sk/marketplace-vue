@@ -5,27 +5,57 @@
     <p>Tu número de pedido es: {{ orderId }}</p>
     
     <router-link to="/" class="btn-continuar">Continuar comprando</router-link>
+    <ReviewDialog 
+      v-if="showReviewDialog"
+      :orderId="orderId"
+      @close="showReviewDialog = false"
+    />
   </div>
 </template>
 
 <script>
+import ReviewDialog from '@/components/ReviewDialog.vue';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/services/firebase';
+
 export default {
   name: 'ConfirmacionCompra',
-  props: {
-    orderId: {
-      type: String,
-      required: false,
-      default: 'No disponible'
-    }
+  components: { ReviewDialog },
+  data() {
+    return {
+      orderId: 'No disponible',
+      showReviewDialog: false,
+      orderStatus: ''
+    };
   },
-  mounted() {
-    // Mostrar notificación cuando el componente se monta
+  async mounted() {
+    // Extraer el orderId de los parámetros de la ruta
+    this.orderId = this.$route.query.orderId || 'No disponible';
+
+    if (this.orderId !== 'No disponible') {
+      // Obtener el estado del pedido desde Firestore
+      const orderRef = doc(db, 'ordenes', this.orderId);
+      const orderSnap = await getDoc(orderRef);
+      
+      if (orderSnap.exists()) {
+        this.orderStatus = orderSnap.data().estado || '';
+        
+        // Mostrar el diálogo de reseña si el pedido está entregado
+        if (this.orderStatus === 'pendiente') {
+          setTimeout(() => {
+            this.showReviewDialog = true;
+          }, 3000);
+        }
+      }
+    }
+
+    // Mostrar notificación
     this.$root.$emit('show-notification', {
       message: `Compra completada! ID: ${this.orderId}`,
       type: 'success'
     });
   }
-}
+};
 </script>
 
 <style scoped>

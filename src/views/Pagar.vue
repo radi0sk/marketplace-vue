@@ -403,60 +403,73 @@ export default {
     },
     
     async finalizarCompra() {
-      if (!this.isAuthenticated) {
-        this.toast.warning('Debes iniciar sesión para continuar');
-        return;
-      }
-      
-      if (!this.validarFormulario) {
-        this.toast.error('Por favor completa todos los campos requeridos');
-        return;
-      }
-      
-      this.loading = true;
-      try {
-        await this.guardarDatosCliente();
-        
-        const orden = {
-          fecha: new Date().toISOString(),
-          cliente: { ...this.cliente },
-          direccion: { ...this.direccionEnvio },
-          metodoPago: this.metodoPago,
-          items: this.cart.map(item => ({
-            id: item.id,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-            categoria: item.categoria,
-            images: item.images
-          })),
-          subtotal: this.subtotal,
-          envio: this.gastosEnvio,
-          recargo: this.recargo,
-          total: this.totalFinal,
-          estado: 'pendiente',
-          comprobante: this.comprobante ? this.comprobante.name : null
-        };
-        
-        const orderRef = doc(db, 'ordenes', Date.now().toString());
-        await setDoc(orderRef, orden);
-        
-        await this.clearCart();
-        this.toast.success('¡Compra realizada con éxito!', {
-          timeout: 5000
-        });
-        
-        this.$router.push({ 
-          name: 'Confirmacion', 
-          query: { orderId: orderRef.id }
-        });
-        
-      } catch (error) {
-        this.toast.error(`Error al procesar: ${error.message}`);
-      } finally {
-        this.loading = false;
-      }
-    }    
+  if (!this.isAuthenticated) {
+    this.toast.warning('Debes iniciar sesión para continuar');
+    return;
+  }
+  
+  if (!this.validarFormulario) {
+    this.toast.error('Por favor completa todos los campos requeridos');
+    return;
+  }
+  
+  this.loading = true;
+  try {
+    await this.guardarDatosCliente();
+    
+    // Asegúrate de que todos los campos tengan valores válidos
+    const orden = {
+      fecha: new Date().toISOString(),
+      cliente: {
+        name: this.cliente.name || '',
+        telefono: this.cliente.telefono || '',
+        email: this.cliente.email || ''
+      },
+      direccion: this.direccionEnvio ? {
+        nombre: this.direccionEnvio.nombre || '',
+        direccion: this.direccionEnvio.direccion || '',
+        ciudad: this.direccionEnvio.ciudad || '',
+        departamento: this.direccionEnvio.departamento || '',
+        codigoPostal: this.direccionEnvio.codigoPostal || '',
+        tiempoEntrega: this.direccionEnvio.tiempoEntrega || 3
+      } : {},
+      metodoPago: this.metodoPago || 'deposito',
+      items: this.cart.map(item => ({
+        id: item.id || '',
+        name: item.name || '',
+        price: item.price || 0,
+        quantity: item.quantity || 1,
+        categoria: item.categoria || '',
+        images: item.images || []
+      })),
+      subtotal: this.subtotal || 0,
+      envio: this.gastosEnvio || 0,
+      recargo: this.recargo || 0,
+      total: this.totalFinal || 0,
+      estado: 'pendiente',
+      comprobante: this.comprobante ? this.comprobante.name : ''
+    };
+    
+    const orderRef = doc(db, 'ordenes', Date.now().toString());
+    await setDoc(orderRef, orden);
+    
+    await this.clearCart();
+    this.toast.success('¡Compra realizada con éxito!', {
+      timeout: 5000
+    });
+    
+    this.$router.push({ 
+      name: 'Confirmacion', 
+      query: { orderId: orderRef.id }
+    });
+    
+  } catch (error) {
+    this.toast.error(`Error al procesar: ${error.message}`);
+    console.error('Error details:', error); // Para depuración
+  } finally {
+    this.loading = false;
+  }
+}   
   }
 };
 </script>

@@ -63,15 +63,13 @@
           <span>Productos</span>
         </router-link>
 
-        <template v-if="!userRole || userRole === 'cliente'">
-          <router-link to="/cart" class="nav-link cart-link">
-            <font-awesome-icon 
-              :icon="['fas', 'shopping-cart']" 
-              :class="{ 'has-items': cartItemCount > 0 }" 
-            />
-            <span v-if="cartItemCount > 0" class="cart-badge">{{ cartItemCount }}</span>
-          </router-link>
-        </template>
+       <router-link to="/cart" class="nav-link cart-link" v-if="userRole == 'admin' || userRole === 'cliente'">
+  <font-awesome-icon 
+    :icon="['fas', 'shopping-cart']" 
+    :class="{ 'has-items': cartItemCount > 0 }" 
+  />
+  <span v-if="cartItemCount > 0" class="cart-badge">{{ cartItemCount }}</span>
+</router-link>
       </nav>
 
       <!-- Panel de usuario -->
@@ -126,6 +124,10 @@
                 <router-link to="/admin/sales-statistics" class="dropdown-item">
                   <i class="fas fa-chart-line"></i> Estadísticas
                 </router-link>
+                <router-link to="/brands" class="dropdown-item">
+                  <i class="fas fa-chart-line"></i> Marcas
+                </router-link>
+                
               
               </template>
               

@@ -12,6 +12,10 @@ const Confirmacion = () => import('@/components/Confirmacion.vue');
 
 // Componentes de cliente
 const ClienteProductDetail = () => import('@/views/cliente/ClienteProductDetail.vue');
+import PaymentOptions from '../views/PaymentOptions.vue';
+import EnvioPaqueteria from "../views/envioPaqueteria.vue";
+import ContactoInstitucional from "@/views/contactoInstitucional.vue";
+import NosotrosInstitucional from "@/views/nosotrosInstitucional.vue";
 
 
 // Componentes de usuario
@@ -43,6 +47,26 @@ const routes = [
     name: "Products",
     component: ProductsPage,
     meta: { title: "Productos" }
+  },
+  {
+    path: '/pagos',
+    name: 'Pagos',
+    component: PaymentOptions
+  },
+  {
+    path: '/contacto',
+    name: 'contacto',
+    component: ContactoInstitucional
+  },
+   {
+    path: '/nosotros',
+    name: 'nosostros',
+    component: NosotrosInstitucional
+  },
+   {
+    path: '/envioPaqueteria',
+    name: 'envioPaqueteria',
+    component: EnvioPaqueteria
   },
   {
     path: "/product/:id",
@@ -119,19 +143,19 @@ const routes = [
       },
       // En el children del AdminDashboard
 {
-  path: "brands",
+  path: "/brands",
   name: "BrandManagement",
   component: () => import('@/views/admin/BrandManagement.vue'),
   meta: { title: "Gestión de Marcas" }
 },
 {
-  path: "brands/add",
+  path: "/brands/add",
   name: "AddBrand",
   component: () => import('@/views/admin/AddBrand.vue'),
   meta: { title: "Agregar Marca" }
 },
 {
-  path: "brands/edit/:id",
+  path: "/brands/edit/:id",
   name: "EditBrand",
   component: () => import('@/views/admin/EditBrand.vue'),
   meta: { title: "Editar Marca" },
