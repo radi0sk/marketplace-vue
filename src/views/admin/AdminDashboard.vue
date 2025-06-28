@@ -21,12 +21,13 @@
 export default {
   name: 'AdminDashboard',
   data() {
-    
     return {
       adminLinks: [
         { path: '/admin/products', text: 'Gestión de Productos', icon: 'fas fa-boxes' },
         { path: '/admin/orders', text: 'Gestión de Pedidos', icon: 'fas fa-clipboard-list' },
-        { path: '/admin/sales-statistics', text: 'Estadísticas', icon: 'fas fa-chart-line' }
+        { path: '/admin/sales-statistics', text: 'Estadísticas', icon: 'fas fa-chart-line' },
+        { path: '/admin/brands', text: 'Gestión de Marcas', icon: 'fas fa-tag' }, // Nuevo
+        { path: '/admin/banner', text: 'Gestión de Banners', icon: 'fas fa-image' } // Nuevo
       ]
     };
   }

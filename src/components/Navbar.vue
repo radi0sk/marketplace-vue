@@ -5,7 +5,7 @@
       <div class="brand-section">
         <router-link to="/" class="brand-link">
           <img src="@/assets/logo.png" alt="AgroMarket" class="brand-logo">
-          <span class="brand-name">AgroMarket</span>
+          <span class="brand-name">AgroMarket GT</span>
         </router-link>
       </div>
 
@@ -443,27 +443,14 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-:root {
-  --verde-primario: #2E7D32;
-  --verde-secundario: #388E3C;
-  --amarillo-maiz: #FFF59D;
-  --naranja-cosecha: #FF8F00;
-  --gris-claro: #FAFAFA;
-  --gris-medio: #757575;
-  --rojo-carniceria: #B71C1C;
-  --blanco: #FFFFFF;
-  --sombra: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-/* Estilos generales del header */
+<style scoped>/* Estilos generales del header */
 .agro-header {
-  background-color: var(--verde-primario);
-  box-shadow: var(--sombra);
+  background-color: #2c3e50; /* Nuevo color de fondo principal */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
   z-index: 1000;
+  padding: 10px;
 }
 
 .header-container {
@@ -493,7 +480,7 @@ export default {
 }
 
 .brand-name {
-  color: var(--blanco);
+  color: #FFFFFF; /* Blanco puro para el texto de la marca sobre fondo oscuro */
   font-size: 1.5rem;
   font-weight: 700;
   font-family: 'Roboto', sans-serif;
@@ -515,17 +502,23 @@ export default {
 .search-input {
   flex: 1;
   padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
+  border: 1px solid #5a7da0; /* Borde sutil que combine con el fondo */
   border-radius: 20px;
   font-size: 0.9rem;
   outline: none;
   transition: all 0.3s ease;
   padding-right: 40px;
+  background-color: #FFFFFF; /* Fondo blanco para el input */
+  color: #1C1C1C; /* Negro suave para el texto del input */
+}
+
+.search-input::placeholder {
+  color: #888; /* Color del placeholder */
 }
 
 .search-input:focus {
-  border-color: var(--verde-secundario);
-  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.2);
+  border-color: #1F3A93; /* Azul oscuro para el foco */
+  box-shadow: 0 0 0 2px rgba(31, 58, 147, 0.2); /* Sombra con el color principal */
 }
 
 .search-button {
@@ -535,7 +528,7 @@ export default {
   height: 100%;
   width: 40px;
   background-color: transparent;
-  color: var(--verde-secundario);
+  color: #1F3A93; /* Azul oscuro para el icono de búsqueda */
   border: none;
   border-radius: 0 20px 20px 0;
   cursor: pointer;
@@ -545,7 +538,7 @@ export default {
 }
 
 .search-button:hover {
-  color: var(--verde-primario);
+  color: #002B5B; /* Azul secundario en hover */
 }
 
 /* Dropdown de resultados */
@@ -554,7 +547,7 @@ export default {
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
+  background: #FFFFFF; /* Blanco puro para el fondo del dropdown */
   border-radius: 0 0 8px 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
@@ -566,12 +559,12 @@ export default {
   display: flex;
   padding: 0.8rem;
   cursor: pointer;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #E0E0E0; /* Gris suave para el borde */
   transition: background-color 0.2s;
 }
 
 .search-result-item:hover {
-  background-color: #f8f9fa;
+  background-color: #F2F2F2; /* Gris suave en hover */
 }
 
 .result-image {
@@ -589,13 +582,13 @@ export default {
 .result-info h4 {
   margin: 0 0 0.3rem 0;
   font-size: 0.9rem;
-  color: #333;
+  color: #1C1C1C; /* Negro suave para el título del producto */
 }
 
 .result-price {
   margin: 0;
   font-weight: bold;
-  color: var(--verde-primario);
+  color: #1F3A93; /* Azul oscuro para el precio */
   font-size: 0.9rem;
 }
 
@@ -603,13 +596,13 @@ export default {
   padding: 0.8rem;
   text-align: center;
   font-weight: 500;
-  color: var(--verde-primario);
+  color: #1F3A93; /* Azul oscuro para el texto del footer */
   cursor: pointer;
-  background-color: #f5f5f5;
+  background-color: #F2F2F2; /* Gris suave para el fondo del footer */
 }
 
 .search-footer:hover {
-  background-color: #eee;
+  background-color: #E0E0E0; /* Gris más oscuro en hover */
 }
 
 /* Navegación principal */
@@ -620,7 +613,7 @@ export default {
 }
 
 .nav-link {
-  color: var(--blanco);
+  color: #FFFFFF; /* Blanco puro para los enlaces de navegación sobre fondo oscuro */
   text-decoration: none;
   font-weight: 500;
   font-size: 1rem;
@@ -633,11 +626,12 @@ export default {
 }
 
 .nav-link:hover {
-  color: var(--amarillo-maiz);
+  color: #002B5B; /* Azul secundario en hover */
 }
 
 .nav-link i {
   font-size: 1.1rem;
+  color: #FFFFFF; /* Blanco puro para los iconos de navegación */
 }
 
 /* Carrito */
@@ -646,16 +640,16 @@ export default {
 }
 
 .cart-link svg {
-  color: #000;
+  color: #FFFFFF; /* Blanco puro para el icono del carrito */
   transition: color 0.3s ease;
 }
 
 .cart-link .has-items {
-  color: var(--rojo-carniceria);
+  color: #F2F2F2; /* Gris suave cuando tiene ítems */
 }
 
 .cart-badge {
-  background-color: var(--naranja-cosecha);
+  background-color: #1F3A93; /* Azul oscuro para el badge */
   color: white;
   border-radius: 50%;
   width: 20px;
@@ -686,13 +680,13 @@ export default {
 }
 
 .login-link {
-  background-color: var(--amarillo-maiz);
-  color: var(--verde-primario);
+  background-color: #1F3A93; /* Azul oscuro para el botón de ingresar */
+  color: #FFFFFF; /* Blanco puro para el texto */
 }
 
 .login-link:hover {
-  background-color: var(--naranja-cosecha);
-  color: var(--blanco);
+  background-color: #002B5B; /* Azul secundario en hover */
+  color: #FFFFFF;
 }
 
 .user-panel {
@@ -708,11 +702,11 @@ export default {
   height: 36px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--amarillo-maiz);
+  border: 2px solid #FFFFFF; /* Blanco puro para el borde del avatar */
 }
 
 .user-name {
-  color: var(--blanco);
+  color: #FFFFFF; /* Blanco puro para el nombre de usuario */
   font-weight: 500;
   max-width: 120px;
   white-space: nowrap;
@@ -725,7 +719,7 @@ export default {
   position: absolute;
   top: 100%;
   right: 0;
-  background-color: var(--blanco);
+  background-color: #FFFFFF; /* Blanco puro para el fondo del dropdown */
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   min-width: 220px;
@@ -739,7 +733,7 @@ export default {
   align-items: center;
   gap: 0.8rem;
   padding: 0.8rem 1.2rem;
-  color: var(--gris-medio);
+  color: #1C1C1C; /* Negro suave para los ítems del dropdown */
   text-decoration: none;
   transition: all 0.2s ease;
   border-left: 3px solid transparent;
@@ -748,30 +742,30 @@ export default {
 .dropdown-item i {
   width: 20px;
   text-align: center;
-  color: var(--verde-primario);
+  color: #1F3A93; /* Azul oscuro para los iconos del dropdown */
 }
 
 .dropdown-item:hover {
-  background-color: var(--gris-claro);
-  color: var(--verde-primario);
-  border-left-color: var(--naranja-cosecha);
+  background-color: #F2F2F2; /* Gris suave en hover */
+  color: #002B5B; /* Azul secundario en hover */
+  border-left-color: #1F3A93; /* Azul oscuro para el borde izquierdo en hover */
 }
 
 .dropdown-divider {
   height: 1px;
-  background-color: var(--gris-claro);
+  background-color: #E0E0E0; /* Gris suave para el divisor */
   margin: 0.3rem 0;
 }
 
 .logout-item {
-  color: var(--rojo-carniceria);
+  color: #FF4D4D; /* Rojo para el logout (siempre es bueno mantener un color distintivo para esta acción) */
 }
 
 .logout-item i {
-  color: var(--rojo-carniceria);
+  color: #FF4D4D; /* Rojo para el icono de logout */
 }
 
-/* Responsive */
+/* Responsive (mantener los estilos existentes o ajustarlos si es necesario para los nuevos colores) */
 @media (max-width: 992px) {
   .header-container {
     flex-wrap: wrap;
@@ -817,5 +811,4 @@ export default {
     right: auto;
     left: 0;
   }
-}
-</style>
+}</style>

@@ -67,15 +67,21 @@
       };
   
       const handleProductUpdate = async (productData) => {
+        console.log('handleProductUpdate: Iniciando proceso de actualización.'); // Log de inicio
+        console.log('handleProductUpdate: ID del producto:', productId.value); // Log del ID
+        console.log('handleProductUpdate: Datos del producto a enviar:', productData); // Log de los datos
         isSubmitting.value = true;
         try {
+          console.log('handleProductUpdate: Llamando a updateProduct...'); // Log antes de la llamada a la API
           await updateProduct(productId.value, productData);
+          console.log('handleProductUpdate: Producto actualizado exitosamente.'); // Log de éxito
           router.push('/admin/products?updated=true');
         } catch (err) {
           error.value = 'Error al actualizar el producto';
-          console.error(err);
+          console.error('handleProductUpdate: Error durante la actualización:', err); // Log de error detallado
         } finally {
           isSubmitting.value = false;
+          console.log('handleProductUpdate: Proceso de actualización finalizado.'); // Log de finalización
         }
       };
   
@@ -93,7 +99,6 @@
   };
   </script>
   
-
 
 
 <style scoped>

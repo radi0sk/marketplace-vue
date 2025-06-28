@@ -3,6 +3,7 @@ import App from "./App.vue";
 import router from "./router";
 import store from './store';
 import Toast from 'vue-toastification';
+
 import 'vue-toastification/dist/index.css';
 import { auth, db } from "@/services/firebase";
 import { doc, updateDoc, increment } from "firebase/firestore";

@@ -149,7 +149,7 @@ export default {
     },
     viewOrderDetail(orderId) {
       console.log('[OrderManagement] Navegando a detalle de orden:', orderId);
-      this.$router.push({ name: 'OrderDetail', params: { id: orderId } });
+      this.$router.push({ name: 'AdminOrderDetail', params: { id: orderId } });
     },
     getStatusLabel(status) {
       const option = this.statusOptions.find(opt => opt.value === status);

@@ -25,6 +25,7 @@ const PurchaseHistory = () => import('@/views/user/PurchaseHistory.vue');
 const UserOrderDetail = () => import('@/views/user/OrderDetail.vue');
 
 // Componentes de admin
+import AdminBannerManager from '../views/admin/AdminBannerManager.vue';
 const AdminDashboard = () => import('@/views/admin/AdminDashboard.vue');
 const ProductManagement = () => import('@/views/admin/ProductManagement.vue');
 const AddProduct = () => import('@/views/admin/AddProduct.vue');
@@ -143,24 +144,30 @@ const routes = [
       },
       // En el children del AdminDashboard
 {
-  path: "/brands",
+  path: "/admin/brands",
   name: "BrandManagement",
   component: () => import('@/views/admin/BrandManagement.vue'),
   meta: { title: "Gestión de Marcas" }
 },
 {
-  path: "/brands/add",
+  path: "/admin/brands/add",
   name: "AddBrand",
   component: () => import('@/views/admin/AddBrand.vue'),
   meta: { title: "Agregar Marca" }
 },
 {
-  path: "/brands/edit/:id",
+  path: "/admin/brands/edit/:id",
   name: "EditBrand",
   component: () => import('@/views/admin/EditBrand.vue'),
   meta: { title: "Editar Marca" },
   props: true
 },
+{
+    path: '/admin/banner', // This will be your admin path
+    name: 'AdminBannerManager',
+    component: AdminBannerManager,
+    // meta: { requiresAuth: true, requiresAdmin: true } // Add meta fields for auth/admin guards
+  },
       {
         path: "products/add",
         name: "AddProduct",

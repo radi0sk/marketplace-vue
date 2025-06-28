@@ -1,10 +1,21 @@
 <template>
   <div class="home-page">
-    <section class="banner">
-      <div class="banner-content">
-        <h1>Bienvenido a Marketplace</h1>
-        <p>Encuentra los mejores productos al mejor precio.</p>
-        <router-link to="/products" class="cta-button">Explorar Productos</router-link>
+  <section class="banner-carousel">
+      <div class="carousel-inner" :style="{ transform: `translateX(-${currentBannerIndex * 100}%)` }">
+        <div class="banner-slide" v-for="banner in banners" :key="banner.id">
+          <div class="banner-content" :style="{ backgroundImage: `url(${banner.imageUrl})` }">
+            <h1>{{ banner.title }}</h1>
+            <p>{{ banner.description }}</p>
+            <router-link :to="banner.ctaButtonLink" class="cta-button">{{ banner.ctaButtonText }}</router-link>
+          </div>
+        </div>
+      </div>
+      <button class="carousel-button prev" @click="prevBanner" v-if="banners.length > 1">❮</button>
+      <button class="carousel-button next" @click="nextBanner" v-if="banners.length > 1">❯</button>
+      <div class="carousel-indicators" v-if="banners.length > 1">
+        <span v-for="(banner, index) in banners" :key="banner.id + '-indicator'"
+              :class="{ active: index === currentBannerIndex }"
+              @click="goToBanner(index)"></span>
       </div>
     </section>
 
@@ -129,10 +140,9 @@
     </section>
   </div>
 </template>
-
 <script>
 import { db, auth } from "@/services/firebase";
-import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, query, orderBy } from "firebase/firestore"; // Added query, orderBy
 import { useToast } from "vue-toastification";
 import AddedToCartToast from '@/components/toasts/AddedToCartToast.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
@@ -146,7 +156,7 @@ export default {
     return {
       categories: [],
       featuredProducts: [],
-      testimonials: [], // Tus testimonios originales
+      testimonials: [],
       favoriteStatus: {},
       canScrollPrevCategory: false,
       canScrollNextCategory: true,
@@ -154,10 +164,13 @@ export default {
       canScrollNextProduct: true,
       canScrollPrevBrand: false,
       canScrollNextBrand: true,
-      canScrollPrevTestimonial: false, // Nuevo estado para testimonios
-      canScrollNextTestimonial: true, // Nuevo estado para testimonios
+      canScrollPrevTestimonial: false,
+      canScrollNextTestimonial: true,
       scrollInterval: null,
       brands: [],
+      banners: [], // Changed to an array to hold multiple banners
+      currentBannerIndex: 0,
+      bannerAutoScrollInterval: null,
     }
   },
   setup() {
@@ -165,6 +178,9 @@ export default {
     return { toast };
   },
   async created() {
+    // Fetch all banners
+    await this.fetchAllBanners(); // Changed to fetch all banners
+
     const categoriesSnapshot = await getDocs(collection(db, "categories"));
     this.categories = categoriesSnapshot.docs.map((doc) => ({
       id: doc.id,
@@ -198,17 +214,69 @@ export default {
     duplicatedBrands() {
       return [...this.brands, ...this.brands, ...this.brands];
     },
-    // Duplicar testimonios para el efecto de carrusel infinito
     duplicatedTestimonials() {
       return [...this.testimonials, ...this.testimonials, ...this.testimonials];
     }
   },
   methods: {
+    async fetchAllBanners() { // New method to fetch all banners
+      try {
+        // Order by 'order' field if you add it to your banner documents
+        const bannersQuery = query(collection(db, "banners"), orderBy("order", "asc"));
+        const querySnapshot = await getDocs(bannersQuery);
+        this.banners = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        // If no banners are found, you might want to set a default one
+        if (this.banners.length === 0) {
+          this.banners.push({
+            id: 'default-banner',
+            title: "Bienvenido a Marketplace",
+            description: "Encuentra los mejores productos al mejor precio.",
+            ctaButtonText: "Explorar Productos",
+            ctaButtonLink: "/products",
+            imageUrl: "https://res.cloudinary.com/dsfnladar/image/upload/v1744246734/onqmux4dzpoqmmkdblhk.png" // Default image
+          });
+        }
+        this.startBannerAutoScroll(); // Start auto-scroll after banners are loaded
+      } catch (error) {
+        console.error("Error fetching banners:", error);
+        this.toast.error("Error al cargar los banners.");
+      }
+    },
+    prevBanner() {
+      if (this.banners.length <= 1) return;
+      this.currentBannerIndex = (this.currentBannerIndex - 1 + this.banners.length) % this.banners.length;
+      this.resetBannerAutoScroll();
+    },
+    nextBanner() {
+      if (this.banners.length <= 1) return;
+      this.currentBannerIndex = (this.currentBannerIndex + 1) % this.banners.length;
+      this.resetBannerAutoScroll();
+    },
+    goToBanner(index) {
+      if (index >= 0 && index < this.banners.length) {
+        this.currentBannerIndex = index;
+        this.resetBannerAutoScroll();
+      }
+    },
+    startBannerAutoScroll() {
+      if (this.banners.length <= 1) return; // No need to auto-scroll if only one banner
+      clearInterval(this.bannerAutoScrollInterval); // Clear any existing interval
+      this.bannerAutoScrollInterval = setInterval(() => {
+        this.nextBanner();
+      }, 5000); // Change banner every 5 seconds
+    },
+    resetBannerAutoScroll() {
+      clearInterval(this.bannerAutoScrollInterval);
+      this.startBannerAutoScroll();
+    },
     scrollSlider(type, direction) {
       const list = this.$refs[`${type}List`];
       if (!list) return;
 
-      // Ajusta la cantidad de scroll por tipo si es necesario
       const scrollAmount = direction * (type === 'category' ? 200 : type === 'testimonial' ? 400 : 300);
       list.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     },
@@ -217,22 +285,19 @@ export default {
         const list = this.$refs[`${type}List`];
         if (list) {
           this[`canScrollPrev${type.charAt(0).toUpperCase() + type.slice(1)}`] = list.scrollLeft > 0;
-          // Un pequeño ajuste para que el botón "next" se deshabilite justo cuando ya no hay más contenido para mostrar
           this[`canScrollNext${type.charAt(0).toUpperCase() + type.slice(1)}`] =
-            list.scrollLeft < (list.scrollWidth - list.clientWidth - 5); // Restamos un pequeño margen
+            list.scrollLeft < (list.scrollWidth - list.clientWidth - 5);
         }
       };
 
       check('category');
       check('product');
       check('brand');
-      check('testimonial'); // Incluir testimonios
+      check('testimonial');
     },
     startAutoScroll() {
-      // Podrías decidir si quieres que los testimonios también se autodesplacen
       this.scrollInterval = setInterval(() => {
         this.scrollSlider('product', 1);
-        // this.scrollSlider('testimonial', 1); // Descomenta si quieres auto-scroll en testimonios
       }, 3000);
     },
     async toggleFavorite(product) {
@@ -278,7 +343,7 @@ export default {
         if (userDoc.exists()) {
           const favorites = userDoc.data().favorites || [];
           this.favoriteStatus = Object.fromEntries(
-            this.featuredProducts.map(product => [ // Asegúrate de usar featuredProducts o products según tu estructura
+            this.featuredProducts.map(product => [
               product.id,
               favorites.includes(product.id)
             ])
@@ -311,18 +376,19 @@ export default {
       });
     }
   },
+  // Removed the watch for banner.imageUrl since it's now handled by individual banner-slide styles
   mounted() {
     this.checkScroll();
-    // Agrega 'testimonialList' a la lista de refs a observar
     ['categoryList', 'productList', 'brandList', 'testimonialList'].forEach(ref => {
       this.$refs[ref]?.addEventListener('scroll', this.checkScroll);
     });
     this.startAutoScroll();
-    this.checkFavorites(); // Asegurarse de llamar a checkFavorites al montar
+    this.checkFavorites();
+    // bannerAutoScroll is now handled inside fetchAllBanners
   },
   beforeUnmount() {
     clearInterval(this.scrollInterval);
-    // Remueve 'testimonialList' de la lista de refs al desmontar
+    clearInterval(this.bannerAutoScrollInterval); // Clear banner auto-scroll interval
     ['categoryList', 'productList', 'brandList', 'testimonialList'].forEach(ref => {
       this.$refs[ref]?.removeEventListener('scroll', this.checkScroll);
     });
@@ -343,10 +409,11 @@ export default {
 
 /* General Page Styling */
 .home-page {
-  padding: 1.5rem; /* Slightly more padding for better spacing */
+   /* Slightly more padding for better spacing */
   background: linear-gradient(to bottom, var(--soft-gray), #e0e0e0); /* Elegant gradient background */
   color: var(--soft-black); /* Default text color */
 }
+
 
 h1, h2 {
   color: var(--dark-blue); /* Headings in dark blue */
@@ -358,31 +425,48 @@ p {
   color: #555; /* Slightly lighter text for paragraphs */
 }
 
-/* --- Banner Section --- */
-.banner {
-  background-image: url("https://res.cloudinary.com/dsfnladar/image/upload/v1744246734/onqmux4dzpoqmmkdblhk.png");
+/* --- Banner Carousel Section --- */
+.banner-carousel {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+ 
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  margin-bottom: 3rem;
+}
+
+.carousel-inner {
+  display: flex;
+  transition: transform 0.5s ease-in-out;
+}
+
+.banner-slide {
+  flex: 0 0 100%; /* Each slide takes full width of the carousel */
+}
+
+.banner-content {
+  /* This now acts as the individual banner slide with its own background image */
   background-size: cover;
   background-position: center;
   color: var(--pure-white);
-  padding: 3rem 2rem; /* Increased padding */
+  
   text-align: center;
-  border-radius: 16px; /* Softer rounded borders */
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); /* Elegant shadow */
-  margin-bottom: 3rem; /* More separation */
-  overflow: hidden; /* Ensures content stays within rounded corners */
+ 
+  min-height: 300px; /* Ensure a minimum height for the banner */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .banner-content h1 {
-  font-size: 3rem; /* Larger font size */
-  margin-bottom: 1rem;
-  color: var(--pure-white); /* Ensure white text on banner */
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); /* Subtle text shadow */
+  color: var(--pure-white); /* Override to white for readability on banner */
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Add text shadow for contrast */
 }
 
 .banner-content p {
-  font-size: 1.35rem; /* Slightly larger paragraph */
-  margin-bottom: 2rem; /* More space */
-  color: var(--pure-white); /* Ensure white text on banner */
+  color: var(--pure-white); /* Override to white for readability on banner */
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .cta-button {
@@ -404,6 +488,58 @@ p {
   box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3); /* Enhanced shadow on hover */
 }
 
+.carousel-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.5);
+  color: var(--pure-white);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 1;
+  transition: background-color 0.3s ease;
+}
+
+.carousel-button:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.carousel-button.prev {
+  left: 10px;
+}
+
+.carousel-button.next {
+  right: 10px;
+}
+
+.carousel-indicators {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  z-index: 1;
+}
+
+.carousel-indicators span {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.carousel-indicators span.active {
+  background-color: var(--pure-white);
+  transform: scale(1.2);
+}
 /* --- Sliders (Categories, Featured Products, Brands, Testimonials) --- */
 .slider-container {
   position: relative;
