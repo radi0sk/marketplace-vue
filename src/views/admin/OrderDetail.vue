@@ -41,13 +41,51 @@
           <h3><i class="fas fa-money-bill-wave"></i> Información de Pago</h3>
           <p><strong>Método:</strong> {{ getPaymentMethodLabel(order.metodoPago) }}</p>
           <p><strong>Comprobante:</strong> 
-            <a v-if="order.cliente.comprobante" :href="order.cliente.comprobante" target="_blank">
+            <a v-if="order.comprobanteURL" :href="order.comprobanteURL" target="_blank">
               Ver comprobante
             </a>
             <span v-else>No disponible</span>
           </p>
         </div>
-      </div>
+
+        <div class="meta-section">
+          <h3><i class="fas fa-shipping-fast"></i> Información de Guía</h3>
+          <p>
+            <strong>Empresa de Courier:</strong> 
+            <select v-model="selectedCourier" class="input-field courier-select">
+              <option value="">Seleccione un courier</option>
+              <option value="forza">Forza Delivery</option>
+              <option value="cargoexpreso">Cargo Expreso</option>
+              <option value="guatex">Guatex</option>
+              </select>
+          </p>
+          <p>
+            <strong>Número de Guía:</strong> 
+            <input type="text" v-model="newNumeroGuia" placeholder="Ingresar número de guía" class="input-field" />
+          </p>
+          <p>
+            <strong>Link de Rastreo:</strong> 
+            <a v-if="trackingLink" :href="trackingLink" target="_blank" class="tracking-link">
+              Rastrear Pedido
+            </a>
+            <span v-else>No generado o No disponible</span>
+          </p>
+          
+          <p>
+            <strong>Imagen de Guía (opcional):</strong> 
+            <input type="file" @change="handleImageFileSelect" accept="image/*" class="file-input" />
+            <a v-if="order.imagenGuiaURL" :href="order.imagenGuiaURL" target="_blank" class="image-link">
+              Ver Imagen de Guía Existente
+            </a>
+            <span v-else-if="!selectedImageFile">No disponible</span>
+          </p>
+          <div v-if="selectedImagePreview" class="image-preview">
+            <img :src="selectedImagePreview" alt="Vista previa de la imagen de guía" class="preview-thumbnail" />
+            <button @click="removeSelectedImage" class="remove-image-button">Quitar imagen</button>
+          </div>
+          <button @click="saveTrackingInfo" class="save-button">Guardar Información de Guía</button>
+        </div>
+        </div>
       
       <div class="order-items">
         <h3><i class="fas fa-boxes"></i> Productos</h3>
@@ -81,8 +119,8 @@
           <span>Q{{ order.total.toFixed(2) }}</span>
         </div>
       </div>
+      
 
-      <!-- Sección de historial de estados -->
       <div class="status-history" v-if="order.historialEstados && order.historialEstados.length > 0">
         <h3><i class="fas fa-history"></i> Historial de Estados</h3>
         <div class="history-list">
@@ -120,8 +158,10 @@
 </template>
 
 <script>
-import { getOrderById, updateOrderStatus } from '@/api/orders';
+import { getOrderById, updateOrderStatus, updateOrderTrackingInfo } from '@/api/orders';
 import { useToast } from "vue-toastification";
+// Importa la función de Cloudinary
+import { uploadImageToCloudinary } from '@/services/cloudinary';
 
 export default {
   props: {
@@ -139,13 +179,32 @@ export default {
       order: null,
       loading: true,
       error: null,
-      newStatus: ''
+      newStatus: '',
+      newNumeroGuia: '',
+      selectedCourier: '',
+      selectedImageFile: null,
+      selectedImagePreview: null
     };
   },
   computed: {
     user() {
       console.log('[OrderDetail] Accediendo al usuario desde Vuex:', this.$store.state.user);
       return this.$store.state.user;
+    },
+    trackingLink() {
+      if (!this.selectedCourier || !this.newNumeroGuia) {
+        return null;
+      }
+      switch (this.selectedCourier) {
+        case 'forza':
+          return `https://rastreo.forzadelivery.com/${this.newNumeroGuia}`;
+        case 'cargoexpreso':
+          return `https://cargoexpreso.com/tracking/?guia=${this.newNumeroGuia}#resultado`;
+        case 'guatex':
+          return null; // O podrías retornar un link a su página principal para ingresar la guía manualmente
+        default:
+          return null;
+      }
     }
   },
   async created() {
@@ -168,7 +227,6 @@ export default {
         
         console.log('[OrderDetail] Orden cargada:', this.order);
         
-        // Asegurar que la dirección exista
         if (!this.order.direccion) {
           console.log('[OrderDetail] Dirección no encontrada, asignando valores por defecto');
           this.order.direccion = {
@@ -179,7 +237,6 @@ export default {
           };
         }
 
-        // Verificar historial de estados
         if (!this.order.historialEstados) {
           console.log('[OrderDetail] No se encontró historial de estados, inicializando array vacío');
           this.order.historialEstados = [];
@@ -189,12 +246,87 @@ export default {
         
         this.newStatus = this.order.estado;
         console.log('[OrderDetail] Estado actual:', this.newStatus);
+
+        this.newNumeroGuia = this.order.numeroGuia || '';
+        this.selectedCourier = this.order.courier || '';
+
       } catch (error) {
         console.error('[OrderDetail] Error al cargar el pedido:', error);
         this.error = 'Error al cargar el pedido: ' + error.message;
       } finally {
         this.loading = false;
         console.log('[OrderDetail] Carga de orden completada');
+      }
+    },
+    handleImageFileSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        this.selectedImageFile = file;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          this.selectedImagePreview = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        this.selectedImageFile = null;
+        this.selectedImagePreview = null;
+      }
+    },
+    removeSelectedImage() {
+      this.selectedImageFile = null;
+      this.selectedImagePreview = null;
+    },
+    async saveTrackingInfo() {
+      console.log('[OrderDetail] Intentando guardar información de guía');
+      try {
+        let imageUrl = this.order.imagenGuiaURL; // Mantener la URL existente por defecto
+
+        if (this.selectedImageFile) {
+          this.toast.info('Subiendo imagen... Por favor, espere.');
+          try {
+            // *** REEMPLAZO: Subir la imagen a Cloudinary ***
+            imageUrl = await uploadImageToCloudinary(this.selectedImageFile);
+            this.toast.success('Imagen de guía subida exitosamente a Cloudinary.');
+            console.log('Imagen de guía subida. URL:', imageUrl);
+
+          } catch (uploadError) {
+            console.error('Error al subir la imagen de guía a Cloudinary:', uploadError);
+            this.toast.error('Error al subir la imagen de guía: ' + uploadError.message);
+            // Si hay un error de subida, mantenemos la URL existente o null si no había
+            imageUrl = this.order.imagenGuiaURL; 
+          }
+        } else if (this.selectedImagePreview === null && this.order.imagenGuiaURL) {
+          // Si el usuario quitó la imagen y había una URL existente, la establecemos en null
+          imageUrl = null;
+        }
+
+        const finalTrackingUrl = this.trackingLink;
+
+        const trackingDataToSave = {
+          numeroGuia: this.newNumeroGuia,
+          courier: this.selectedCourier,
+          trackingURL: finalTrackingUrl,
+          imagenGuiaURL: imageUrl
+        };
+
+        console.log('[OrderDetail] Datos de guía a guardar:', trackingDataToSave);
+        this.toast.info('Guardando datos de guía...');
+
+        await updateOrderTrackingInfo(this.order.id, trackingDataToSave);
+
+        this.order.numeroGuia = this.newNumeroGuia;
+        this.order.courier = this.selectedCourier;
+        this.order.trackingURL = finalTrackingUrl;
+        this.order.imagenGuiaURL = imageUrl;
+        
+        this.selectedImageFile = null;
+        this.selectedImagePreview = null;
+
+        this.toast.success('Información de guía guardada exitosamente.');
+
+      } catch (error) {
+        console.error('[OrderDetail] Error al guardar información de guía:', error);
+        this.toast.error('Error al guardar información de guía: ' + error.message);
       }
     },
     async updateStatus() {
@@ -224,7 +356,6 @@ export default {
           cambioEstado
         });
 
-        // Actualizar el estado localmente
         this.order.estado = this.newStatus;
         this.order.historialEstados.push(cambioEstado);
         
@@ -233,7 +364,6 @@ export default {
       } catch (error) {
         console.error('[OrderDetail] Error al actualizar estado:', error);
         this.toast.error('Error al actualizar estado: ' + error.message);
-        // Revertir el cambio en el select
         this.newStatus = this.order.estado;
       }
     },
@@ -278,6 +408,79 @@ export default {
 </script>
 
 <style scoped>
+/* Tu CSS existente */
+.input-field {
+  width: calc(100% - 10px); /* Ajusta el ancho según sea necesario */
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.courier-select {
+  width: 100%;
+}
+
+.file-input {
+  margin-top: 0.5rem;
+}
+
+.image-link, .tracking-link { /* Unifica estilos para ambos enlaces */
+  display: block;
+  margin-top: 0.5rem;
+  color: #42b983;
+  text-decoration: underline;
+}
+
+.image-preview {
+  margin-top: 1rem;
+  border: 1px dashed #ccc;
+  padding: 0.5rem;
+  text-align: center;
+  position: relative; /* Para posicionar el botón de quitar */
+}
+
+.preview-thumbnail {
+  max-width: 100%;
+  height: auto;
+  max-height: 200px;
+  display: block;
+  margin: 0 auto;
+  border-radius: 4px;
+}
+
+.remove-image-button {
+  background-color: #dc3545; /* Rojo para "quitar" */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+
+.remove-image-button:hover {
+  background-color: #c82333;
+}
+
+.save-button {
+  background-color: #007bff; /* Un color diferente para distinguirlo */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  margin-top: 1rem;
+  display: block;
+  width: 100%;
+}
+
+.save-button:hover {
+  background-color: #0056b3;
+}
+
+/* Mantén todos tus estilos existentes */
 .order-detail {
   max-width: 1000px;
   margin: 0 auto;

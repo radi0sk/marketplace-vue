@@ -6,7 +6,6 @@
     <h1 v-if="orden">Detalle de Pedido #{{ orden.id }}</h1>
     <h1 v-else>Detalle de Pedido</h1>
     
-    <!-- Asegura todos los accesos a orden con  v-if -->
     <div v-if="orden" class="order-status" :class="orden.estado">
       {{ formatEstado(orden.estado) }}
     </div>
@@ -16,7 +15,6 @@
     </div>
     
     <div v-else-if="orden" class="order-content">
-      <!-- Resumen rápido -->
       <div class="quick-summary">
         <div class="summary-item">
           <span class="label">Fecha:</span>
@@ -28,11 +26,10 @@
         </div>
         <div class="summary-item">
           <span class="label">Método de pago:</span>
-          <span class="value">{{ formatMetodoPago(orden.items[0]?.metodoPago) }}</span>
+          <span class="value">{{ formatMetodoPago(orden.metodoPago) }}</span>
         </div>
       </div>
 
-      <!-- Timeline de estados -->
       <div class="status-timeline">
         <h2>Progreso del Pedido</h2>
         <div class="timeline">
@@ -52,7 +49,6 @@
         </div>
       </div>
 
-      <!-- Información de envío -->
       <div class="shipping-info">
         <h2>Información de Envío</h2>
         <div class="info-grid">
@@ -67,15 +63,32 @@
             <p>{{ orden.direccion.direccion }}</p>
             <p>{{ orden.direccion.ciudad }}, {{ orden.direccion.departamento }}</p>
             <p>Código postal: {{ orden.direccion.codigoPostal }}</p>
-            <p v-if="orden.direccion.tiempoEntrega">
+            <p v-if="orden.tiempoEntrega">
               <strong>Tiempo estimado de entrega:</strong> 
-              {{ orden.direccion.tiempoEntrega }} días hábiles
+              {{ orden.tiempoEntrega }} días hábiles
             </p>
           </div>
         </div>
       </div>
 
-      <!-- Resumen de productos -->
+      <div class="tracking-info" v-if="orden.numeroGuia || orden.imagenGuiaURL">
+        <h2>Información de Rastreo</h2>
+        <p v-if="orden.courier"><strong>Empresa de Courier:</strong> {{ formatCourierName(orden.courier) }}</p>
+        <p v-if="orden.numeroGuia"><strong>Número de Guía:</strong> {{ orden.numeroGuia }}</p>
+        <p v-if="orden.trackingURL">
+          <strong>Link de Rastreo:</strong> 
+          <a :href="orden.trackingURL" target="_blank" class="tracking-link">Rastrear mi pedido</a>
+        </p>
+        <div v-if="orden.imagenGuiaURL" class="guide-image-container">
+          <strong>Imagen de Guía:</strong>
+          <a :href="orden.imagenGuiaURL" target="_blank">
+            <img :src="orden.imagenGuiaURL" alt="Imagen de guía de envío" class="guide-image" />
+          </a>
+        </div>
+        <p v-else-if="orden.numeroGuia && !orden.trackingURL">
+          * Para Guatex, por favor ingrese el número de guía directamente en su sitio web.
+        </p>
+      </div>
       <div class="order-products">
         <h2>Resumen de Compra</h2>
         <div v-for="item in orden.items" :key="item.id" class="product-item">
@@ -94,7 +107,6 @@
         </div>
       </div>
 
-      <!-- Resumen de pago -->
       <div class="payment-summary">
         <h2>Resumen de Pago</h2>
         <div class="summary-grid">
@@ -115,11 +127,10 @@
         </div>
       </div>
 
-      <!-- Comprobante si existe -->
-      <div v-if="orden.cliente.comprobante" class="payment-proof">
+      <div v-if="orden.comprobanteURL" class="payment-proof">
         <h2>Comprobante de Pago</h2>
         <a 
-          :href="getComprobanteUrl(orden.cliente.comprobante)" 
+          :href="orden.comprobanteURL" 
           target="_blank" 
           class="proof-link"
         >
@@ -156,7 +167,8 @@ export default {
   },
   computed: {
     hasDiscount() {
-      return this.orden?.items.some(item => item.price * item.quantity > item.subtotal);
+      // Ajuste para calcular el descuento basado en la diferencia entre el precio total y el subtotal individual si aplica
+      return this.orden?.items.some(item => (item.price * item.quantity) > item.subtotal);
     },
     hasRecargo() {
       return this.orden?.items.some(item => item.recargo > 0);
@@ -178,12 +190,23 @@ export default {
             id: docSnap.id,
             ...docSnap.data()
           };
-          console.log('Order loaded:', this.orden);
+          console.log('Order loaded for client:', this.orden);
+
+          // Asegurar historialEstados existe y es un array
+          if (!this.orden.historialEstados) {
+            this.orden.historialEstados = [];
+          }
+
+          // Asegurar direccion existe
+          if (!this.orden.direccion) {
+            this.orden.direccion = {}; // O un objeto con valores por defecto
+          }
+          
         } else {
           this.toast.error('La orden no existe');
         }
       } catch (error) {
-        console.error('Error loading order:', error);
+        console.error('Error loading order for client:', error);
         this.toast.error(`Error al cargar la orden: ${error.message}`);
       } finally {
         this.loading = false;
@@ -209,10 +232,13 @@ export default {
       if (item.images && item.images.length > 0) {
         return item.images[0];
       }
-      return 'https://res.cloudinary.com/dsfnladar/image/upload/v1744650151/al57mqnrifrtjfsbt8tw.webp';
+      return 'https://res.cloudinary.com/dsfnladar/image/upload/v1744650151/al57mqnrifrtjfsbt8tw.webp'; // Imagen por defecto
     },
     
+    // Este método ya no es estrictamente necesario si comprobanteURL viene directo de Firestore
+    // Pero lo mantengo si necesitas alguna lógica adicional.
     async getComprobanteUrl(filename) {
+      // Asumo que 'comprobante' en orden.cliente.comprobante es el nombre del archivo en storage
       try {
         const ref = storageRef(storage, `comprobantes/${filename}`);
         return await getDownloadURL(ref);
@@ -223,8 +249,10 @@ export default {
     },
     
     calculateDiscount() {
+      // Suma la diferencia entre el precio total del item y su subtotal (si subtotal es menor)
       return this.orden.items.reduce((total, item) => {
-        return total + (item.price * item.quantity - item.subtotal);
+        // Asegúrate de que item.subtotal sea el subtotal después de aplicar descuentos por item, si los hay
+        return total + ((item.price * item.quantity) - (item.subtotal || item.price * item.quantity));
       }, 0);
     },
     
@@ -237,11 +265,13 @@ export default {
     formatEstado(estado) {
       const estados = {
         pendiente: 'Pendiente',
-        completado: 'Completado',
-        cancelado: 'Cancelado',
+        procesando: 'Procesando',
+        verificado: 'Verificado',
+        empacado: 'Empacado',
         enviado: 'Enviado',
         entregado: 'Entregado',
-        verificado: 'Verificado'
+        completado: 'Completado',
+        cancelado: 'Cancelado'
       };
       return estados[estado] || estado;
     },
@@ -249,15 +279,35 @@ export default {
     formatMetodoPago(metodo) {
       const metodos = {
         deposito: 'Depósito bancario',
-        contraentrega: 'Pago contra entrega',
+        efectivo: 'Pago contra entrega', // Cambiado para ser más claro para el cliente
         tarjeta: 'Tarjeta de crédito/débito'
       };
       return metodos[metodo] || metodo;
     },
+
+    formatCourierName(courier) {
+      const couriers = {
+        forza: 'Forza Delivery',
+        cargoexpreso: 'Cargo Expreso',
+        guatex: 'Guatex'
+      };
+      return couriers[courier] || courier;
+    },
     
-    formatFecha(fechaISO) {
-      const fecha = new Date(fechaISO);
-      return fecha.toLocaleDateString('es-GT', {
+    formatFecha(fecha) { // El parámetro ahora es el objeto Date directo
+      // Si la fecha es un objeto de tipo Timestamp de Firestore, conviértela
+      let dateObj;
+      if (fecha?.toDate) {
+        dateObj = fecha.toDate();
+      } else if (typeof fecha === 'string') {
+        dateObj = new Date(fecha);
+      } else if (fecha instanceof Date) {
+        dateObj = fecha;
+      } else {
+        dateObj = new Date(); // Fallback
+      }
+
+      return dateObj.toLocaleDateString('es-GT', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -292,24 +342,38 @@ export default {
   text-transform: capitalize;
 }
 
+/* Colores de estados */
 .order-status.pendiente {
   background-color: #fff3cd;
   color: #856404;
 }
-
-.order-status.completado {
+.order-status.procesando {
+  background-color: #d1ecf1; /* Light blue-green */
+  color: #0c5460;
+}
+.order-status.verificado {
   background-color: #d4edda;
   color: #155724;
 }
-
+.order-status.empacado {
+  background-color: #cce5ff;
+  color: #004085;
+}
+.order-status.enviado {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+.order-status.entregado {
+  background-color: #d4edda;
+  color: #155724;
+}
+.order-status.completado {
+  background-color: #d1e7dd;
+  color: #0f5132;
+}
 .order-status.cancelado {
   background-color: #f8d7da;
   color: #721c24;
-}
-
-.order-status.enviado {
-  background-color: #cce5ff;
-  color: #004085;
 }
 
 .quick-summary {
@@ -407,6 +471,53 @@ export default {
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2rem;
   margin-top: 1rem;
+}
+
+/* Tracking Info Section */
+.tracking-info {
+  background: #e9f7ef; /* Un fondo ligeramente verde para esta sección */
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border: 1px solid #d4edda;
+}
+
+.tracking-info h2 {
+  color: #155724;
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.tracking-info p {
+  margin-bottom: 0.5rem;
+}
+
+.tracking-link {
+  color: #007bff;
+  text-decoration: underline;
+  font-weight: bold;
+}
+
+.tracking-link:hover {
+  color: #0056b3;
+}
+
+.guide-image-container {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.guide-image {
+  max-width: 100%;
+  height: auto;
+  max-height: 250px; /* Limita la altura para que no ocupe demasiado espacio */
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-top: 0.5rem;
+}
+
+.order-products {
+  margin-bottom: 2rem;
 }
 
 .product-item {

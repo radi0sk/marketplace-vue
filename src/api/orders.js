@@ -8,7 +8,7 @@ import {
   where, 
   orderBy,
   runTransaction,
-  arrayUnion
+  arrayUnion, updateDoc
 } from 'firebase/firestore';
 
 
@@ -106,6 +106,21 @@ export const updateOrderStatus = async (orderId, { newStatus, cambioEstado }) =>
     return await getDoc(orderRef);
   } catch (error) {
     console.error('Error updating order status:', error);
+    throw error;
+  }
+};
+export const updateOrderTrackingInfo = async (orderId, trackingInfo) => {
+  try {
+    const orderRef = doc(db, 'ordenes', orderId);
+    await updateDoc(orderRef, {
+      numeroGuia: trackingInfo.numeroGuia || null, // Guarda el número de guía
+      courier: trackingInfo.courier || null,       // Guarda la empresa de courier
+      trackingURL: trackingInfo.trackingURL || null, // Guarda la URL de rastreo generada
+      imagenGuiaURL: trackingInfo.imagenGuiaURL || null // Guarda la URL de la imagen
+    });
+    console.log(`Información de rastreo actualizada para la orden ${orderId}`);
+  } catch (error) {
+    console.error('Error al actualizar la información de rastreo:', error);
     throw error;
   }
 };
