@@ -136,7 +136,7 @@
                 <router-link to="/admin/sales-statistics" class="dropdown-item">
                   <i class="fas fa-chart-line"></i> Estadísticas
                 </router-link>
-                <router-link to="/brands" class="dropdown-item">
+                <router-link to="/admin/brands" class="dropdown-item">
                   <i class="fas fa-chart-line"></i> Marcas
                 </router-link>
                 
