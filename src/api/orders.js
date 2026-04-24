@@ -12,12 +12,16 @@ import {
 } from 'firebase/firestore';
 
 
-export const getOrders = async (status = null) => {
+export const getOrders = async (status = null, vendorId = null) => {
   try {
     let q = query(collection(db, 'ordenes'), orderBy('fecha', 'desc'));
     
     if (status) {
       q = query(q, where('estado', '==', status));
+    }
+
+    if (vendorId) {
+      q = query(q, where('vendorIds', 'array-contains', vendorId));
     }
     
     const querySnapshot = await getDocs(q);

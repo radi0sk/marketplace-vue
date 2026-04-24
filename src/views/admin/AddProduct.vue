@@ -1,174 +1,61 @@
+<script setup lang="ts">
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import ProductForm from '@/components/admin/ProductForm.vue';
+
+const router = useRouter();
+const loading = ref(false);
+
+const handleSuccess = () => {
+  // ProductForm handles the saving and notification
+  // We just need to handle navigation if needed, 
+  // but ProductForm already does it. 
+  // We can keep this for extra logic if needed.
+};
+</script>
+
 <template>
-  <div class="admin-container">
-    <div class="admin-header">
-      <h1>Agregar Nuevo Producto</h1>
-      <router-link to="/admin/products" class="back-link">← Volver a Productos</router-link>
-    </div>
-    
-    <div class="admin-content">
-      <ProductForm 
-        @product-submitted="handleProductSubmit" 
-        @error="showError" 
-      />
-      
-      <div v-if="isSubmitting" class="loading-overlay">
-        <div class="loading-content">
-          <div class="spinner"></div>
-          <p>Guardando producto...</p>
-          
-        </div>
+  <div class="min-h-full py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- Breadcrumbs / Back -->
+      <nav class="flex mb-8" aria-label="Breadcrumb">
+        <ol role="list" class="flex items-center space-x-4">
+          <li>
+            <div>
+              <router-link to="/admin" class="text-gray-400 hover:text-gray-500">
+                <svg class="flex-shrink-0 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                </svg>
+                <span class="sr-only">Dashboard</span>
+              </router-link>
+            </div>
+          </li>
+          <li>
+            <div class="flex items-center">
+              <svg class="flex-shrink-0 h-5 w-5 text-gray-300" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+              </svg>
+              <router-link to="/admin/products" class="ml-4 text-sm font-medium text-gray-500 hover:text-gray-700">Productos</router-link>
+            </div>
+          </li>
+          <li>
+            <div class="flex items-center">
+              <svg class="flex-shrink-0 h-5 w-5 text-gray-300" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+              </svg>
+              <span class="ml-4 text-sm font-medium text-gray-700">Nuevo Producto</span>
+            </div>
+          </li>
+        </ol>
+      </nav>
+
+      <div class="premium-card p-0 overflow-hidden">
+        <ProductForm :is-edit="false" />
       </div>
     </div>
   </div>
 </template>
 
-<script>
-import ProductForm from '@/components/admin/ProductForm.vue';
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { addDoc, collection } from 'firebase/firestore';
-import { db, auth } from '@/services/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
-
-export default {
-  components: {
-    ProductForm
-  },
-  setup() {
-    const router = useRouter();
-    const isSubmitting = ref(false);
-    const currentUser = ref(null);
-
-    // Escuchar cambios en el estado de autenticación
-    onMounted(() => {
-      onAuthStateChanged(auth, (user) => {
-        currentUser.value = user;
-      });
-    });
-
-    const handleProductSubmit = async (productData) => {
-      // Verificar que hay un usuario autenticado
-      if (!currentUser.value) {
-        showError('Debes estar autenticado para crear un producto');
-        return;
-      }
-
-      isSubmitting.value = true;
-
-      try {
-        // Agregar el ID del usuario que crea el producto
-        const productWithUser = {
-          ...productData,
-          createdBy: currentUser.value.uid,
-          createdAt: new Date().toISOString()
-        };
-
-        // Guardar en Firestore (usar productWithUser en lugar de productData)
-        const docRef = await addDoc(collection(db, 'products'), productWithUser);
-        console.log('Producto guardado con ID:', docRef.id);
-        
-        // Mostrar notificación de éxito
-        showNotification('Producto guardado exitosamente', 'success');
-        
-        // Redirigir después de 1.5 segundos
-        setTimeout(() => {
-          router.push('/admin/products');
-        }, 1500);
-      } catch (error) {
-        console.error('Error al guardar el producto:', error);
-        showError('Error al guardar el producto: ' + error.message);
-      } finally {
-        isSubmitting.value = false;
-      }
-    };
-
-    const showError = (message) => {
-      showNotification(message, 'error');
-    };
-
-    const showNotification = (message, type) => {
-      // Implementar tu sistema de notificaciones aquí
-      console.log(`${type}: ${message}`);
-      // Ejemplo: this.$root.$emit('show-notification', { message, type });
-    };
-
-    return {
-      handleProductSubmit,
-      isSubmitting,
-      showError
-    };
-  }
-};
-</script>
-
 <style scoped>
-.admin-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.admin-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #eee;
-}
-
-.admin-header h1 {
-  margin: 0;
-  color: #333;
-}
-
-.back-link {
-  color: #42b983;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.back-link:hover {
-  text-decoration: underline;
-}
-
-.admin-content {
-  position: relative;
-}
-
-.loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.loading-content {
-  text-align: center;
-  background: white;
-  padding: 30px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-radius: 50%;
-  border-top: 4px solid #42b983;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 15px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+/* No extra styles needed as ProductForm and Global CSS handle it */
 </style>

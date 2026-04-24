@@ -30,6 +30,7 @@
         :order="order"
         @status-updated="handleStatusUpdate"
         @view-detail="viewOrderDetail"
+        @delete-order="confirmDeleteOrder"
       />
     </div>
   </div>
@@ -37,7 +38,10 @@
 
 <script>
 import { getOrders, updateOrderStatus } from '@/api/orders';
+import { db } from '@/services/firebase';
+import { doc, deleteDoc } from 'firebase/firestore';
 import OrderCard from '@/components/admin/OrderCard.vue';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { useToast } from "vue-toastification";
 
 export default {
@@ -46,7 +50,8 @@ export default {
   },
   setup() {
     const toast = useToast();
-    return { toast };
+    const authStore = useAuthStore();
+    return { toast, authStore };
   },
   data() {
     return {
@@ -88,7 +93,11 @@ export default {
       try {
         this.loading = true;
         const status = this.selectedStatus === 'todos' ? null : this.selectedStatus;
-        const orders = await getOrders(status) || [];
+        
+        // Determinar si filtrar por vendedor
+        const vendorId = this.authStore.isAdmin ? null : this.authStore.user?.uid;
+        
+        const orders = await getOrders(status, vendorId) || [];
         console.log('[OrderManagement] Órdenes obtenidas:', orders.length);
         this.orders = orders;
       } catch (error) {
@@ -149,7 +158,19 @@ export default {
     },
     viewOrderDetail(orderId) {
       console.log('[OrderManagement] Navegando a detalle de orden:', orderId);
-      this.$router.push({ name: 'OrderDetail', params: { id: orderId } });
+      this.$router.push({ name: 'AdminOrderDetail', params: { id: orderId } });
+    },
+    async confirmDeleteOrder(orderId) {
+      if (confirm('¿Estás seguro de eliminar este pedido? Esta acción es irreversible.')) {
+        try {
+          await deleteDoc(doc(db, 'ordenes', orderId));
+          this.toast.success('Pedido eliminado correctamente');
+          await this.loadOrders();
+        } catch (error) {
+          console.error('Error deleting order:', error);
+          this.toast.error('Error al eliminar el pedido');
+        }
+      }
     },
     getStatusLabel(status) {
       const option = this.statusOptions.find(opt => opt.value === status);

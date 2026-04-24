@@ -1,118 +1,52 @@
+<script setup lang="ts">
+import { useRoute } from 'vue-router';
+import ProductForm from '@/components/admin/ProductForm.vue';
+
+const route = useRoute();
+const productId = route.params.id as string;
+</script>
+
 <template>
-    <div class="edit-product-container">
-      <h1>Editar Producto {{ productId }}</h1>
-      
-      <div v-if="error" class="error-message">
-        {{ error }}
-      </div>
-      
-      <div v-if="isLoading">
-        Cargando datos del producto...
-      </div>
-      
-      <ProductForm 
-        v-else
-        :initial-product="product" 
-        :is-editing="true"
-        @product-submitted="handleProductUpdate"
-      />
-      
-      <div v-if="isSubmitting" class="loading-message">
-        Guardando cambios...
+  <div class="min-h-full py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- Breadcrumbs / Back -->
+      <nav class="flex mb-8" aria-label="Breadcrumb">
+        <ol role="list" class="flex items-center space-x-4">
+          <li>
+            <div>
+              <router-link to="/admin" class="text-gray-400 hover:text-gray-500">
+                <svg class="flex-shrink-0 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                </svg>
+                <span class="sr-only">Dashboard</span>
+              </router-link>
+            </div>
+          </li>
+          <li>
+            <div class="flex items-center">
+              <svg class="flex-shrink-0 h-5 w-5 text-gray-300" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+              </svg>
+              <router-link to="/admin/products" class="ml-4 text-sm font-medium text-gray-500 hover:text-gray-700">Productos</router-link>
+            </div>
+          </li>
+          <li>
+            <div class="flex items-center">
+              <svg class="flex-shrink-0 h-5 w-5 text-gray-300" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+              </svg>
+              <span class="ml-4 text-sm font-medium text-gray-700">Editar Producto</span>
+            </div>
+          </li>
+        </ol>
+      </nav>
+
+      <div class="premium-card p-0 overflow-hidden">
+        <ProductForm :is-edit="true" :id="productId" />
       </div>
     </div>
-  </template>
-  
-  <script>
-  import ProductForm from '@/components/admin/ProductForm.vue';
-  import { ref, onMounted } from 'vue';
-  import { useRoute, useRouter } from 'vue-router';
-  import { getProductById, updateProduct } from '@/api/products'; // Asegúrate de crear este archivo
-  
-  export default {
-    components: {
-      ProductForm
-    },
-    setup() {
-      const route = useRoute();
-      const router = useRouter();
-      const productId = ref(route.params.id);
-      const product = ref({});
-      const isLoading = ref(true);
-      const isSubmitting = ref(false);
-      const error = ref(null);
-  
-      const fetchProduct = async () => {
-        try {
-          isLoading.value = true;
-          error.value = null;
-          
-          // Llamada real a la API
-          const response = await getProductById(productId.value);
-          
-          if (!response) throw new Error('Producto no encontrado');
-          
-          product.value = {
-            ...response,
-            category: response.categoria?.id || ''
-          };
-          
-        } catch (err) {
-          console.error('Error al cargar producto:', err);
-          error.value = 'No se pudo cargar el producto';
-          router.push('/admin/products');
-        } finally {
-          isLoading.value = false;
-        }
-      };
-  
-      const handleProductUpdate = async (productData) => {
-        isSubmitting.value = true;
-        try {
-          await updateProduct(productId.value, productData);
-          router.push('/admin/products?updated=true');
-        } catch (err) {
-          error.value = 'Error al actualizar el producto';
-          console.error(err);
-        } finally {
-          isSubmitting.value = false;
-        }
-      };
-  
-      onMounted(fetchProduct);
-  
-      return {
-        productId,
-        product,
-        isLoading,
-        isSubmitting,
-        error,
-        handleProductUpdate
-      };
-    }
-  };
-  </script>
-  
-
-
+  </div>
+</template>
 
 <style scoped>
-  .error-message {
-    color: red;
-    margin-bottom: 1rem;
-  }
-  .loading-message {
-    color: #666;
-    font-style: italic;
-  }
- 
-.error-message {
-  color: red;
-  margin-bottom: 1rem;
-}
-.loading-message {
-  color: #666;
-  font-style: italic;
-}
-/* Resto de tus estilos. .. */
 </style>

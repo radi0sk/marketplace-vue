@@ -1,50 +1,61 @@
+<script setup lang="ts">
+import { onMounted } from 'vue';
+import { useAuthStore } from '@/stores/useAuthStore';
+import AppNavbar from "./components/Navbar.vue";
+import AppFooter from "./components/Footer.vue";
+import BottomNav from "./components/BottomNav.vue";
+
+const authStore = useAuthStore();
+
+onMounted(() => {
+  authStore.initialize();
+});
+</script>
+
 <template>
-  <div id="app">
-    <!-- Navbar -->
+  <div class="min-h-screen bg-slate-50 font-sans selection:bg-primary-100 selection:text-primary-900 overflow-x-hidden">
+    <!-- Navbar con efecto de cristal (Glassmorphism) -->
     <AppNavbar />
 
-    <!-- Contenido dinámico basado en la ruta -->
-    <router-view />
+    <!-- Área de contenido principal con transiciones suaves -->
+    <main class="container mx-auto px-4 pt-20 md:pt-28 pb-24 md:pb-12 min-h-screen">
+      <router-view v-slot="{ Component }">
+        <transition 
+          enter-active-class="transition duration-300 ease-out"
+          enter-from-class="opacity-0 translate-y-4"
+          enter-to-class="opacity-100 translate-y-0"
+          leave-active-class="transition duration-200 ease-in"
+          leave-from-class="opacity-100"
+          leave-to-class="opacity-0"
+          mode="out-in"
+        >
+          <component :is="Component" />
+        </transition>
+      </router-view>
+    </main>
 
-    <!-- Imagen de logo (opcional) -->
-    <AppFooter />
-    
+    <BottomNav />
+    <div class="hidden md:block">
+      <AppFooter />
+    </div>
   </div>
 </template>
 
-<script>
-// Importa el componente Navbar
-import AppNavbar from "./components/Navbar.vue";
-import AppFooter from "./components/Footer.vue";
-
-export default {
-  name: "App",
-  components: {
-    AppNavbar,
-    AppFooter, // Registra el componente Navbar listo
-  },
-};
-</script>
-
 <style>
-/* Estilos globales */
+@reference "@/assets/main.css";
+
+/* Estilos globales para tipografía y transiciones */
 body {
-  margin: 0;
-  font-family: Arial, sans-serif;
+  @apply antialiased overflow-x-hidden;
 }
 
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.3s ease;
 }
 
-/* Estilos para el logo (opcional) */
-.logo {
-  width: 100px;
-  margin-top: 20px;
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
 }
 </style>

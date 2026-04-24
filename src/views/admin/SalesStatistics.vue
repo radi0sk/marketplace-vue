@@ -54,10 +54,15 @@
 </template>
 
 <script>
-import { getOrders } from '@/api/orders'; // Importa la func ión de tu archivo orders.js
+import { getOrders } from '@/api/orders'; 
 import Chart from 'chart.js/auto';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 export default {
+  setup() {
+    const authStore = useAuthStore();
+    return { authStore };
+  },
   data() {
     return {
       selectedPeriod: '30days',
@@ -109,8 +114,11 @@ export default {
     
     async fetchOrders(status, isPreviousPeriod = false) {
       try {
-        // Primero obtenemos todas las órdenes completadas
-        const allOrders = await getOrders(status);
+        // Determinar si filtrar por vendedor
+        const vendorId = this.authStore.isAdmin ? null : this.authStore.user?.uid;
+        
+        // Primero obtenemos las órdenes relevantes
+        const allOrders = await getOrders(status, vendorId);
         
         // Filtramos por período
         const startDate = this.getStartDate(
@@ -124,6 +132,15 @@ export default {
         return allOrders.filter(order => {
           const orderDate = new Date(order.fecha);
           return orderDate >= startDate && orderDate <= endDate;
+        }).map(order => {
+          // Si es asociado, recalculamos el total basado SOLO en sus productos
+          if (!this.authStore.isAdmin) {
+             const userItems = order.items.filter(item => item.vendorId === this.authStore.user?.uid);
+             const subtotalUser = userItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+             // Retornamos un objeto modificado para las estadísticas del asociado
+             return { ...order, total: subtotalUser };
+          }
+          return order;
         });
         
       } catch (error) {

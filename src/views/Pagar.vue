@@ -1,708 +1,361 @@
-<template>
-  <div class="pagar-container">
-    <h1>Finalizar Compra</h1>
-
-    <!-- Mostrar mensaje si no está autenticado -->
-    <div v-if="!isAuthenticated" class="not-authenticated">
-      <h2>Debes iniciar sesión para continuar</h2>
-      <p>Para realizar una compra, necesitas tener una cuenta e iniciar sesión.</p>
-      <div class="auth-actions">
-        <router-link to="/login" class="auth-button login">Iniciar Sesión</router-link>
-        
-      </div>
-    </div>
-
-    <!-- Mostrar contenido solo si está autenticado -->
-    <template v-else>
-      <!-- Sección 1: Identificación del cliente -->
-      <section class="identificacion">
-        <h2>Identificación</h2>
-        <div>
-          <p>{{ cliente.email }}</p>
-          <div class="form-group">
-            <label>Nombre completo:</label>
-            <input v-model="cliente.name" required />
-          </div>
-          <div class="form-group">
-            <label>Teléfono / Móvil:</label>
-            <input v-model="cliente.telefono" required />
-          </div>
-        </div>
-      </section>
-
-     
-     <!-- Sección 2: Información de envío -->
-<section class="envio">
-  <h2>Envío</h2>
-  
-  <!-- Mostrar dirección existente -->
-  <div v-if="direccionEnvio" class="direccion-existente">
-    <div class="direccion-info">
-      <p><strong>Nombre:</strong> {{ direccionEnvio.nombre }}</p>
-      <p><strong>Dirección:</strong> {{ direccionEnvio.direccion }}</p>
-      <p><strong>Ciudad:</strong> {{ direccionEnvio.ciudad }}</p>
-      <p><strong>Departamento:</strong> {{ direccionEnvio.departamento }}</p>
-      <p><strong>Código Postal:</strong> {{ direccionEnvio.codigoPostal }}</p>
-      <p><strong>Tiempo de entrega estimado:</strong> {{ direccionEnvio.tiempoEntrega }} días hábiles</p>
-    </div>
-    <button @click="editarDireccion" class="btn-editar">
-      <i class="fas fa-edit"></i> Editar dirección
-    </button>
-  </div>
-  
-  <!-- Formulario para nueva dirección -->
-  <div v-else class="form-direccion">
-    <form @submit.prevent="guardarDireccion">
-      <div class="form-group">
-        <label>Nombre completo:</label>
-        <input v-model="nuevaDireccion.nombre" required />
-      </div>
-      <div class="form-group">
-        <label>Dirección exacta:</label>
-        <input v-model="nuevaDireccion.direccion" required />
-      </div>
-      <div class="form-group">
-        <label>Ciudad:</label>
-        <input v-model="nuevaDireccion.ciudad" required />
-      </div>
-      <div class="form-group">
-        <label>Departamento:</label>
-        <input v-model="nuevaDireccion.departamento" required />
-      </div>
-      <div class="form-group">
-        <label>Código Postal:</label>
-        <input v-model="nuevaDireccion.codigoPostal" required />
-      </div>
-      <button type="submit" class="btn-guardar" :disabled="loading">
-        <span v-if="!loading">Guardar dirección</span>
-        <span v-else><i class="fas fa-spinner fa-spin"></i> Guardando...</span>
-      </button>
-    </form>
-  </div>
-</section>
-
-      <!-- Sección 3 : Método de pago -->
-      <section class="metodo-pago">
-        <h2>Método de Pago</h2>
-        <div class="opciones-pago">
-          <label class="opcion-pago">
-            <input 
-              type="radio" 
-              v-model="metodoPago" 
-              value="deposito" 
-            />
-            <span>Depósito previo</span>
-          </label>
-          <label class="opcion-pago">
-            <input 
-              type="radio" 
-              v-model="metodoPago" 
-              value="contra-entrega" 
-            />
-            <span>Pago contra entrega (+3%)</span>
-          </label>
-        </div>
-
-        <!-- Información de depósito -->
-        <div v-if="metodoPago === 'deposito'" class="info-deposito">
-          <h3>Cuentas bancarias disponibles</h3>
-          <div class="cuenta-bancaria">
-            <p><strong>Banco Industrial</strong></p>
-            <p>Tipo: Cuenta Monetaria</p>
-            <p>Número: 123-456789-0</p>
-            <p>A nombre de: Mi Empresa S.A.</p>
-          </div>
-          <div class="cuenta-bancaria">
-            <p><strong>Banco G&T Continental</strong></p>
-            <p>Tipo: Cuenta Monetaria</p>
-            <p>Número: 987-654321-0</p>
-            <p>A nombre de: Mi Empresa S.A.</p>
-          </div>
-          
-          <div class="comprobante-deposito">
-            <label>Subir comprobante de depósito:</label>
-            <input 
-              type="file" 
-              @change="handleFileUpload" 
-              accept="image/*,.pdf"
-            />
-            <p v-if="comprobante" class="nombre-archivo">
-              Archivo seleccionado: {{ comprobante.name }}
-            </p>
-          </div>
-        </div>
-
-        <!-- Información de pago contra entrega -->
-        <div v-if="metodoPago === 'contra-entrega'" class="info-contra-entrega">
-          <p>El pago contra entrega tiene un recargo del 3% sobre el total.</p>
-          <p>Total con recargo: Q {{ totalConRecargo.toFixed(2) }}</p>
-        </div>
-      </section>
-
-      <!-- Sección 4: Resumen de la compra -->
-      <section class="resumen-compra">
-        <h2>Resumen de la Compra</h2>
-        <div class="lista-productos">
-          <div v-for="item in cart" :key="item.id" class="producto-resumen">
-            <img :src="item.images[0]" :alt="item.name" class="producto-imagen" />
-            <div class="producto-info">
-              <h3>{{ item.name }}</h3>
-              <p>{{ item.quantity }} x Q {{ item.price.toFixed(2) }}</p>
-            </div>
-            <p class="producto-total">
-              Q {{ (item.price * item.quantity).toFixed(2) }}
-            </p>
-          </div>
-        </div>
-        
-        <div class="totales">
-          <div class="total-linea">
-            <span>Subtotal:</span>
-            <span>Q {{ subtotal }}</span>
-          </div>
-          <div class="total-linea">
-            <span>Gastos de envío:</span>
-            <span>Q {{ gastosEnvio.toFixed(2) }}</span>
-          </div>
-          <div v-if="metodoPago === 'contra-entrega'" class="total-linea">
-            <span>Recargo (3%):</span>
-            <span>Q {{ recargo.toFixed(2) }}</span>
-          </div>
-          <div class="total-linea total-final">
-            <span>Total:</span>
-            <span>Q {{ totalFinal.toFixed(2) }}</span>
-          </div>
-        </div>
-        
-        <button 
-          @click="finalizarCompra" 
-          class="finalizar-compra"
-          :disabled="!validarFormulario"
-        >
-          {{ loading ? 'Procesando...' : 'Finalizar Compra' }}
-        </button>
-      </section>
-    </template>
-  </div>
-</template>
-
-<script>
-import { mapState, mapGetters, mapActions } from 'vuex';
-import { db, auth } from '@/services/firebase';
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useCartStore } from '@/stores/useCartStore';
+import { db } from '@/services/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useToast } from "vue-toastification";
 
-export default {
-  name: 'PagarFinal',
-  setup() {
-    const toast = useToast();
-    return { toast };
-  },
-  data() {
-    return {
-      cliente: {
-        name: '',
-        telefono: '',
-        email: ''
-      },
-      direccionEnvio: null,
-      nuevaDireccion: {
-        nombre: '',
-        direccion: '',
-        ciudad: '',
-        departamento: '',
-        codigoPostal: '',
-        tiempoEntrega: 3
-      },
-      metodoPago: 'deposito',
-      comprobante: null,
-      loading: false,
-      isAuthenticated: false
-    };
-  },
-  computed: {
-    ...mapState(['cart']),
-    ...mapGetters(['cartTotal']),
+const router = useRouter();
+const toast = useToast();
+const authStore = useAuthStore();
+const cartStore = useCartStore();
+
+// State
+const isLoading = ref(false);
+const step = ref(1); // 1: Info, 2: Pago, 3: Resumen
+
+const cliente = ref({
+  name: '',
+  telefono: '',
+  email: ''
+});
+
+const direccionEnvio = ref<any>(null);
+const nuevaDireccion = ref({
+  nombre: '',
+  direccion: '',
+  ciudad: '',
+  departamento: '',
+  codigoPostal: '',
+  tiempoEntrega: 3
+});
+
+const metodoPago = ref('deposito');
+const comprobante = ref<File | null>(null);
+
+// Pricing Calculations
+const subtotal = computed(() => cartStore.total);
+
+const gastosEnvio = computed(() => {
+  if (cartStore.items.length === 0) return 0;
+  
+  const especialidades = [
+    { key: 'ganaderia', costo: 0 },
+    { key: 'concentrado', costo: 40 },
+    { key: 'tilapia', costo: 40 },
+    { key: 'carniceria', costo: 35 }
+  ];
+  
+  for (const item of cartStore.items) {
+    const cat = item.categoria?.toLowerCase() || '';
+    const esp = especialidades.find(e => cat.includes(e.key));
+    if (esp) return esp.costo;
+  }
+  return 50;
+});
+
+const recargo = computed(() => 
+  metodoPago.value === 'contra-entrega' ? (subtotal.value + gastosEnvio.value) * 0.03 : 0
+);
+
+const totalFinal = computed(() => subtotal.value + gastosEnvio.value + recargo.value);
+
+// Initialization
+onMounted(async () => {
+  if (!authStore.isAuthenticated) {
+    toast.warning("Inicia sesión para finalizar tu compra");
+    router.push('/login');
+    return;
+  }
+
+  if (authStore.user) {
+    cliente.value.email = authStore.user.email || '';
+    cliente.value.name = authStore.user.displayName || '';
     
-    subtotal() {
-      return parseFloat(this.cartTotal || 0);
-    },
-    
-    gastosEnvio() {
-      if (!this.cart || this.cart.length === 0) return 0;
-      
-      const categoriasEspeciales = [
-        { nombre: 'ganaderia', costo: 0 },
-        { nombre: 'concentrado', costo: 40 },
-        { nombre: 'tilapia', costo: 40 },
-        { nombre: 'carniceria', costo: 35 }
-      ];
-      
-      for (const item of this.cart) {
-        if (!item.categoria) continue;
-        
-        const categoriaItem = item.categoria.toLowerCase();
-        const categoriaEspecial = categoriasEspeciales.find(cat => 
-          categoriaItem.includes(cat.nombre)
-        );
-        
-        if (categoriaEspecial) {
-          return categoriaEspecial.costo;
-        }
+    const userSnap = await getDoc(doc(db, 'users', authStore.user.uid));
+    if (userSnap.exists()) {
+      const data = userSnap.data();
+      cliente.value.telefono = data.telefono || '';
+      if (data.direccionEnvio) {
+        direccionEnvio.value = data.direccionEnvio;
       }
-      
-      return 50;
-    },
-    
-    recargo() {
-      return this.metodoPago === 'contra-entrega' ? 
-        (this.subtotal + this.gastosEnvio) * 0.03 : 0;
-    },
-    
-    totalConRecargo() {
-      return this.subtotal + this.gastosEnvio + this.recargo;
-    },
-    
-    totalFinal() {
-      return this.metodoPago === 'contra-entrega' ? 
-        this.totalConRecargo : 
-        this.subtotal + this.gastosEnvio;
-    },
-    
-    validarFormulario() {
-      return (
-        this.isAuthenticated &&
-        this.cliente.name && 
-        this.cliente.telefono && 
-        this.direccionEnvio && 
-        this.metodoPago && 
-        (this.metodoPago !== 'deposito' || this.comprobante) &&
-        !this.loading
-      );
     }
-  },
-  created() {
-    auth.onAuthStateChanged((user) => {
-      this.isAuthenticated = !!user;
-      if (user) {
-        this.cargarDatosCliente();
-      }
-    });
-  },
-  methods: {
-    ...mapActions(['clearCart']),
-    
-    async cargarDatosCliente() {
-      try {
-        const user = auth.currentUser;
-        
-        if (user) {
-          this.isAuthenticated = true;
-          this.cliente.email = user.email;
-          
-          const userRef = doc(db, 'users', user.uid);
-          const userSnap = await getDoc(userRef);
-          
-          if (userSnap.exists()) {
-            const userData = userSnap.data();
-            
-            this.cliente = {
-              email: user.email,
-              name: userData.name || '',
-              telefono: userData.telefono || ''
-            };
-            
-            if (userData.direccionEnvio) {
-              this.direccionEnvio = userData.direccionEnvio;
-              this.toast.success("Dirección cargada automáticamente");
-            }
-          }
-        }
-      } catch (error) {
-        this.toast.error(`Error cargando datos: ${error.message}`);
-      }
-    },
+  }
+});
 
-    async guardarDireccion() {
-      try {
-        const user = auth.currentUser;
-        if (!user) {
-          this.toast.warning("Debes iniciar sesión para guardar una dirección");
-          return;
-        }
+// Actions
+const setDireccion = async () => {
+  if (!nuevaDireccion.value.direccion || !nuevaDireccion.value.ciudad) {
+    toast.error("Completa los datos de envío");
+    return;
+  }
+  
+  isLoading.value = true;
+  try {
+    const userRef = doc(db, 'users', authStore.user!.uid);
+    await setDoc(userRef, { direccionEnvio: nuevaDireccion.value }, { merge: true });
+    direccionEnvio.value = { ...nuevaDireccion.value };
+    toast.success("Dirección guardada");
+  } catch (error) {
+    toast.error("Error al guardar dirección");
+  } finally {
+    isLoading.value = false;
+  }
+};
 
-        this.loading = true;
+const handleFileUpload = (e: any) => {
+  comprobante.value = e.target.files[0];
+};
 
-        if (!this.nuevaDireccion.nombre || 
-            !this.nuevaDireccion.direccion || 
-            !this.nuevaDireccion.ciudad || 
-            !this.nuevaDireccion.departamento || 
-            !this.nuevaDireccion.codigoPostal) {
-          this.toast.warning("Por favor completa todos los campos");
-          return;
-        }
+const finalizarCompra = async () => {
+  if (!direccionEnvio.value || !cliente.value.telefono) {
+    toast.error("Completa tus datos de envío y contacto");
+    return;
+  }
 
-        const userRef = doc(db, 'users', user.uid);
-        await setDoc(userRef, {
-          direccionEnvio: {
-            nombre: this.nuevaDireccion.nombre,
-            direccion: this.nuevaDireccion.direccion,
-            ciudad: this.nuevaDireccion.ciudad,
-            departamento: this.nuevaDireccion.departamento,
-            codigoPostal: this.nuevaDireccion.codigoPostal,
-            tiempoEntrega: 3
-          }
-        }, { merge: true });
+  if (metodoPago.value === 'deposito' && !comprobante.value) {
+    toast.error("Sube tu comprobante de depósito");
+    return;
+  }
 
-        this.direccionEnvio = { ...this.nuevaDireccion };
-        this.nuevaDireccion = {
-          nombre: '',
-          direccion: '',
-          ciudad: '',
-          departamento: '',
-          codigoPostal: '',
-          tiempoEntrega: 3
-        };
+  isLoading.value = true;
+  try {
+    // Basic order creation
+    const orderId = Date.now().toString();
+    const orden = {
+      id: orderId,
+      fecha: new Date().toISOString(),
+      cliente: cliente.value,
+      direccion: direccionEnvio.value,
+      metodoPago: metodoPago.value,
+      items: cartStore.items,
+      vendorIds: [...new Set(cartStore.items.map(item => item.vendorId).filter(id => !!id))],
+      subtotal: subtotal.value,
+      envio: gastosEnvio.value,
+      recargo: recargo.value,
+      total: totalFinal.value,
+      estado: 'pendiente'
+    };
 
-        this.toast.success("Dirección guardada correctamente");
-      } catch (error) {
-        this.toast.error(`Error al guardar: ${error.message}`);
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async guardarDatosCliente() {
-      try {
-        const user = auth.currentUser;
-        if (!user) return;
-        
-        const userRef = doc(db, 'users', user.uid);
-        await setDoc(userRef, {
-          name: this.cliente.name,
-          telefono: this.cliente.telefono
-        }, { merge: true });
-        
-        this.toast.info("Datos personales actualizados");
-      } catch (error) {
-        this.toast.error(`Error guardando datos: ${error.message}`);
-      }
-    },
-
-    editarDireccion() {
-      this.nuevaDireccion = { ...this.direccionEnvio };
-      this.direccionEnvio = null;
-      this.toast.info("Ahora puedes editar tu dirección");
-    },
-    
-    handleFileUpload(event) {
-      this.comprobante = event.target.files[0];
-      if (this.comprobante) {
-        this.toast.success(`Archivo ${this.comprobante.name} seleccionado`);
-      }
-    },
-    
-    async finalizarCompra() {
-      if (!this.isAuthenticated) {
-        this.toast.warning('Debes iniciar sesión para continuar');
-        return;
-      }
-      
-      if (!this.validarFormulario) {
-        this.toast.error('Por favor completa todos los campos requeridos');
-        return;
-      }
-      
-      this.loading = true;
-      try {
-        await this.guardarDatosCliente();
-        
-        const orden = {
-          fecha: new Date().toISOString(),
-          cliente: { ...this.cliente },
-          direccion: { ...this.direccionEnvio },
-          metodoPago: this.metodoPago,
-          items: this.cart.map(item => ({
-            id: item.id,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-            categoria: item.categoria,
-            images: item.images
-          })),
-          subtotal: this.subtotal,
-          envio: this.gastosEnvio,
-          recargo: this.recargo,
-          total: this.totalFinal,
-          estado: 'pendiente',
-          comprobante: this.comprobante ? this.comprobante.name : null
-        };
-        
-        const orderRef = doc(db, 'ordenes', Date.now().toString());
-        await setDoc(orderRef, orden);
-        
-        await this.clearCart();
-        this.toast.success('¡Compra realizada con éxito!', {
-          timeout: 5000
-        });
-        
-        this.$router.push({ 
-          name: 'Confirmacion', 
-          query: { orderId: orderRef.id }
-        });
-        
-      } catch (error) {
-        this.toast.error(`Error al procesar: ${error.message}`);
-      } finally {
-        this.loading = false;
-      }
-    }    
+    await setDoc(doc(db, 'ordenes', orderId), orden);
+    cartStore.clearCart();
+    toast.success("¡Compra enviada con éxito!");
+    router.push({ name: 'Confirmacion', query: { orderId } });
+  } catch (error) {
+    toast.error("Error al procesar compra");
+  } finally {
+    isLoading.value = false;
   }
 };
 </script>
 
+<template>
+  <div class="max-w-7xl mx-auto px-4 py-10 animate-fade-in relative">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+      
+      <!-- Checkout Flow -->
+      <div class="lg:col-span-2 space-y-12">
+        <div>
+          <h1 class="text-4xl font-bold text-slate-800 font-outfit">Finalizar Compra</h1>
+          <div class="flex items-center gap-4 mt-6">
+            <div :class="['w-10 h-1 h-1 bg-primary-600 rounded-full', step >= 1 ? 'opacity-100' : 'opacity-20']"></div>
+            <div :class="['w-10 h-1 bg-primary-600 rounded-full', step >= 2 ? 'opacity-100' : 'opacity-20']"></div>
+            <div :class="['w-10 h-1 bg-primary-600 rounded-full', step >= 3 ? 'opacity-100' : 'opacity-20']"></div>
+          </div>
+        </div>
+
+        <!-- Section 1: Identification & Shipping -->
+        <section class="space-y-8 bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm">
+          <div class="flex items-center gap-4">
+             <div class="w-10 h-10 bg-primary-50 text-primary-600 rounded-xl flex items-center justify-center font-bold">1</div>
+             <h2 class="text-xl font-bold text-slate-800">Datos de Entrega</h2>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2">
+              <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Nombre Completo</label>
+              <input v-model="cliente.name" type="text" class="input-modern" />
+            </div>
+            <div class="space-y-2">
+              <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Teléfono de Contacto</label>
+              <input v-model="cliente.telefono" type="tel" class="input-modern" placeholder="Ej: 5555-5555" />
+            </div>
+          </div>
+
+          <div v-if="direccionEnvio" class="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex justify-between items-center group">
+             <div class="space-y-1">
+                <p class="text-sm font-bold text-slate-800">{{ direccionEnvio.nombre }}</p>
+                <p class="text-xs text-slate-500">{{ direccionEnvio.direccion }}, {{ direccionEnvio.ciudad }}</p>
+                <p class="text-xs text-slate-400 uppercase font-medium">{{ direccionEnvio.departamento }}</p>
+             </div>
+             <button @click="direccionEnvio = null" class="text-xs font-bold text-primary-600 hover:underline">Cambiar</button>
+          </div>
+
+          <div v-else class="space-y-6">
+             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                  <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Nombre del Receptor</label>
+                  <input v-model="nuevaDireccion.nombre" type="text" class="input-modern" />
+                </div>
+                <div class="space-y-2">
+                  <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Dirección Exacta</label>
+                  <input v-model="nuevaDireccion.direccion" type="text" class="input-modern" />
+                </div>
+             </div>
+             <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <div class="space-y-2">
+                  <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Ciudad</label>
+                  <input v-model="nuevaDireccion.ciudad" type="text" class="input-modern" />
+                </div>
+                <div class="space-y-2">
+                  <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Departamento</label>
+                  <input v-model="nuevaDireccion.departamento" type="text" class="input-modern" />
+                </div>
+                <div class="space-y-2">
+                  <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">CP</label>
+                  <input v-model="nuevaDireccion.codigoPostal" type="text" class="input-modern" />
+                </div>
+             </div>
+             <button @click="setDireccion" class="btn-primary !py-3 !px-8 text-sm">Guardar Datos de Envío</button>
+          </div>
+        </section>
+
+        <!-- Section 2: Payment -->
+        <section class="space-y-8 bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm">
+          <div class="flex items-center gap-4">
+             <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center font-bold">2</div>
+             <h2 class="text-xl font-bold text-slate-800">Método de Pago</h2>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <label :class="['p-6 rounded-3xl border-2 transition-all cursor-pointer flex flex-col gap-4', metodoPago === 'deposito' ? 'border-primary-500 bg-primary-50/30' : 'border-slate-100 bg-slate-50 hover:border-slate-200']">
+                <input type="radio" v-model="metodoPago" value="deposito" class="hidden" />
+                <div class="flex items-center justify-between">
+                   <div class="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-primary-600">
+                      <font-awesome-icon icon="university" />
+                   </div>
+                   <div v-if="metodoPago === 'deposito'" class="w-4 h-4 bg-primary-600 rounded-full flex items-center justify-center">
+                      <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
+                   </div>
+                </div>
+                <div>
+                   <p class="font-bold text-slate-800">Depósito/Transferencia</p>
+                   <p class="text-[10px] text-slate-400 uppercase tracking-widest mt-1">Confirmación Manual</p>
+                </div>
+             </label>
+
+             <label :class="['p-6 rounded-3xl border-2 transition-all cursor-pointer flex flex-col gap-4', metodoPago === 'contra-entrega' ? 'border-primary-500 bg-primary-50/30' : 'border-slate-100 bg-slate-50 hover:border-slate-200']">
+                <input type="radio" v-model="metodoPago" value="contra-entrega" class="hidden" />
+                <div class="flex items-center justify-between">
+                   <div class="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-indigo-600">
+                      <font-awesome-icon icon="hand-holding-usd" />
+                   </div>
+                   <div v-if="metodoPago === 'contra-entrega'" class="w-4 h-4 bg-primary-600 rounded-full flex items-center justify-center">
+                      <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
+                   </div>
+                </div>
+                <div>
+                   <p class="font-bold text-slate-800">Pago Contra Entrega</p>
+                   <p class="text-[10px] text-primary-600 uppercase font-bold mt-1">+3% Recargo Adicional</p>
+                </div>
+             </label>
+          </div>
+
+          <!-- Deposit Info -->
+          <div v-if="metodoPago === 'deposito'" class="animate-fade-in space-y-6">
+             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 bg-slate-900 rounded-2xl text-white">
+                   <p class="text-[10px] font-bold text-primary-400 uppercase mb-2">Banco Industrial</p>
+                   <p class="text-sm font-bold">CTA: 123-456789-0</p>
+                   <p class="text-[10px] text-slate-400">Mi Empresa S.A. | Monetaria</p>
+                </div>
+                <div class="p-4 bg-slate-900 rounded-2xl text-white">
+                   <p class="text-[10px] font-bold text-primary-400 uppercase mb-2">Banco G&T</p>
+                   <p class="text-sm font-bold">CTA: 987-654321-0</p>
+                   <p class="text-[10px] text-slate-400">Mi Empresa S.A. | Monetaria</p>
+                </div>
+             </div>
+             
+             <div class="space-y-4">
+                <p class="text-xs font-bold text-slate-800">Sube tu comprobante:</p>
+                <input type="file" @change="handleFileUpload" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100" />
+             </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Summary Sidebar -->
+      <aside class="space-y-8">
+        <div class="bg-slate-900 p-8 rounded-[40px] text-white shadow-2xl sticky top-24">
+          <h3 class="text-lg font-bold font-outfit mb-8 pb-4 border-b border-white/10 uppercase tracking-widest text-xs opacity-50">Resumen del Pedido</h3>
+          
+          <!-- Virtual List of Items -->
+          <div class="space-y-4 max-h-60 overflow-y-auto mb-8 pr-2 custom-scrollbar">
+             <div v-for="item in cartStore.items" :key="item.id" class="flex gap-4 items-center">
+                <div class="w-12 h-12 rounded-xl overflow-hidden shadow-sm flex-shrink-0">
+                   <img :src="item.images?.[0] || '/placeholder.png'" class="w-full h-full object-cover" />
+                </div>
+                <div class="flex-1 overflow-hidden">
+                   <p class="text-xs font-bold truncate">{{ item.name }}</p>
+                   <p class="text-[10px] text-slate-400">{{ item.quantity }} x ${{ item.price }}</p>
+                </div>
+                <p class="text-xs font-bold">${{ (item.price * item.quantity).toFixed(2) }}</p>
+             </div>
+          </div>
+
+          <!-- Price Breakdown -->
+          <div class="space-y-4 mb-10">
+             <div class="flex justify-between text-sm">
+                <span class="text-slate-400">Subtotal</span>
+                <span class="font-bold">${{ subtotal.toFixed(2) }}</span>
+             </div>
+             <div class="flex justify-between text-sm">
+                <span class="text-slate-400">Envío 🚚</span>
+                <span class="font-bold text-teal-400">${{ gastosEnvio.toFixed(2) }}</span>
+             </div>
+             <div v-if="recargo > 0" class="flex justify-between text-sm">
+                <span class="text-slate-400">Recargo (3%)</span>
+                <span class="font-bold text-rose-400">${{ recargo.toFixed(2) }}</span>
+             </div>
+             <div class="flex justify-between items-end pt-4 border-t border-white/10">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Final</span>
+                <span class="text-4xl font-bold font-outfit text-primary-400">${{ totalFinal.toFixed(2) }}</span>
+             </div>
+          </div>
+
+          <button 
+            @click="finalizarCompra"
+            :disabled="isLoading"
+            class="w-full btn-primary font-bold py-5 rounded-2xl flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
+          >
+            <font-awesome-icon :icon="isLoading ? 'spinner' : 'check-circle'" :spin="isLoading" />
+            {{ isLoading ? 'Procesando...' : 'Realizar Pedido' }}
+          </button>
+          
+          <p class="text-[10px] text-slate-500 text-center mt-6 uppercase tracking-widest font-bold">
+            Compra protegida por Agro Guate
+          </p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</template>
+
 <style scoped>
-.pagar-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+@reference "@/assets/main.css";
+.input-modern {
+  @apply w-full bg-slate-50 border-none rounded-2xl py-3.5 px-5 text-sm font-medium focus:ring-2 focus:ring-primary-500/20 transition-all;
 }
 
-section {
-  margin-bottom: 2rem;
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
 }
-
-h1 {
-  grid-column: 1 / -1;
-  font-size: 2rem;
-  color: #2c3e50;
-  margin-bottom: 1rem;
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-transparent;
 }
-
-h2 {
-  font-size: 1.5rem;
-  margin-bottom: 1.5rem;
-  color: #42b983;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 0.5rem;
-}
-
-.form-group {
-  margin-bottom: 1rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.3rem;
-  font-weight: bold;
-}
-
-.form-group input {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.btn-guardar {
-  background-color: #42b983;
-  color: white;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.opciones-pago {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.opcion-pago {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.8rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.opcion-pago:hover {
-  border-color: #42b983;
-}
-
-.info-deposito, .info-contra-entrega {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  background: #f9f9f9;
-  border-radius: 4px;
-}
-
-.cuenta-bancaria {
-  margin-bottom: 1rem;
-  padding: 1rem;
-  background: white;
-  border: 1px solid #eee;
-  border-radius: 4px;
-}
-
-.comprobante-deposito {
-  margin-top: 1.5rem;
-}
-
-.nombre-archivo {
-  font-size: 0.9rem;
-  color: #666;
-  margin-top: 0.5rem;
-}
-
-.lista-productos {
-  max-height: 300px;
-  overflow-y: auto;
-  margin-bottom: 1.5rem;
-}
-
-.producto-resumen {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 0;
-  border-bottom: 1px solid #eee;
-}
-
-.producto-imagen {
-  width: 60px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: 4px;
-}
-
-.producto-info {
-  flex: 1;
-}
-
-.producto-info h3 {
-  margin: 0;
-  font-size: 1rem;
-}
-
-.producto-total {
-  font-weight: bold;
-}
-
-.totales {
-  margin: 1.5rem 0;
-}
-
-.total-linea {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-}
-
-.total-final {
-  font-size: 1.2rem;
-  font-weight: bold;
-  padding-top: 0.5rem;
-  border-top: 1px solid #eee;
-}
-
-.finalizar-compra {
-  width: 100%;
-  padding: 1rem;
-  background-color: #42b983;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.finalizar-compra:hover {
-  background-color: #3aa876;
-}
-
-.finalizar-compra:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-}
-
-.not-authenticated {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 2rem;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.not-authenticated h2 {
-  color: #2c3e50;
-  margin-bottom: 1rem;
-}
-
-.not-authenticated p {
-  color: #666;
-  margin-bottom: 2rem;
-}
-
-.auth-actions {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-}
-
-.auth-button {
-  padding: 0.75rem 1.5rem;
-  border-radius: 4px;
-  text-decoration: none;
-  font-weight: bold;
-  transition: all 0.3s ease;
-}
-
-.auth-button.login {
-  background-color: #42b983;
-  color: white;
-}
-
-.auth-button.register {
-  background-color: white;
-  color: #42b983;
-  border: 1px solid #42b983;
-}
-
-.auth-button:hover {
-  opacity: 0.9;
-  transform: translateY(-2px);
-}
-
-@media (max-width: 768px) {
-  .pagar-container {
-    grid-template-columns: 1fr;
-  }
-  
-  section {
-    grid-column: auto;
-    grid-row: auto;
-  }
-  
-  .auth-actions {
-    flex-direction: column;
-  }
-  
-  .auth-button {
-    width: 100%;
-    text-align: center;
-  }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-slate-800 rounded-full;
 }
 </style>

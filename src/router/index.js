@@ -28,6 +28,8 @@ const EditProduct = () => import('@/views/admin/EditProduct.vue');
 const OrderManagement = () => import('@/views/admin/OrderManagement.vue');
 const AdminOrderDetail = () => import('@/views/admin/OrderDetail.vue');
 const SalesStatistics = () => import('@/views/admin/SalesStatistics.vue');
+const UserManagement = () => import('@/views/admin/UserManagement.vue');
+const Settings = () => import('@/views/admin/Settings.vue');
 
 
 const routes = [
@@ -40,6 +42,7 @@ const routes = [
   },
   {
     path: "/products",
+    alias: "/menu",
     name: "Products",
     component: ProductsPage,
     meta: { title: "Productos" }
@@ -148,6 +151,18 @@ const routes = [
         name: "SalesStatistics",
         component: SalesStatistics,
         meta: { title: "Estadísticas de Ventas" }
+      },
+      {
+        path: "users",
+        name: "UserManagement",
+        component: UserManagement,
+        meta: { title: "Gestión de Usuarios" }
+      },
+      {
+        path: "settings",
+        name: "Settings",
+        component: Settings,
+        meta: { title: "Configuración" }
       }
     ]
   },

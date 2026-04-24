@@ -1,60 +1,65 @@
 <template>
   <div class="order-card" :class="'status-' + order.estado">
     <div class="card-header">
-      <div class="order-id">Orden #{{ order.id.slice(0, 8).toUpperCase() }}</div>
-      <div class="order-date">{{ formatDate(order.fecha) }}</div>
+      <div>
+        <div class="order-id">Orden #{{ order.id.slice(0, 8).toUpperCase() }}</div>
+        <div class="order-date">{{ formatDate(order.fecha) }}</div>
+      </div>
+      <div class="flex gap-2">
+        <button @click="$emit('view-detail', order.id)" class="p-2 text-slate-400 hover:text-primary-600 transition-colors" title="Editar / Ver Detalle">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button @click="$emit('delete-order', order.id)" class="p-2 text-slate-400 hover:text-rose-600 transition-colors" title="Eliminar Pedido">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </div>
     </div>
-    
     
     <div class="customer-info">
-      <div class="customer-name">
-        <i class="fas fa-user"></i> {{ order.cliente.name }}
+      <div class="customer-name font-bold text-slate-800">
+        <i class="fas fa-user-circle text-primary-500 mr-2"></i> {{ order.cliente.name }}
       </div>
-      <div class="customer-contact">
-        <i class="fas fa-phone"></i> {{ order.cliente.telefono || 'Sin teléfono' }}
-        <i class="fas fa-envelope"></i> {{ order.cliente.email }}
-      </div>
-    </div>
-    
-    <div class="order-summary">
-      <div class="summary-item">
-        <span>Productos:</span>
-        <span>{{ order.items.length }}</span>
-      </div>
-      <div class="summary-item">
-        <span>Subtotal:</span>
-        <span>Q{{ order.subtotal.toFixed(2) }}</span>
-      </div>
-      <div class="summary-item">
-        <span>Envío:</span>
-        <span>Q{{ order.envio.toFixed(2) }}</span>
-      </div>
-      <div class="summary-item total">
-        <span>Total:</span>
-        <span>Q{{ order.total.toFixed(2) }}</span>
+      <div class="customer-contact mt-2 flex flex-wrap gap-x-4 gap-y-1">
+        <span class="flex items-center gap-1.5"><i class="fas fa-phone text-slate-400"></i> {{ order.cliente.telefono || 'Sin tel' }}</span>
+        <span class="flex items-center gap-1.5"><i class="fas fa-envelope text-slate-400 text-[10px]"></i> {{ order.cliente.email }}</span>
       </div>
     </div>
     
-    <div class="order-status">
-      <select v-model="localStatus" @change="updateStatus" class="status-select">
-        <option value="pendiente">Pendiente</option>
-        <option value="procesando">Procesando</option>
-        <option value="verificado">Verificado</option>
-        <option value="empacado">Empacado</option>
-        <option value="enviado">Enviado</option>
-        <option value="entregado">Entregado</option>
-        <option value="completado">Completado</option>
-        <option value="cancelado">Cancelado</option>
-      </select>
+    <div class="order-summary bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+      <div class="summary-item">
+        <span class="text-slate-500">Productos:</span>
+        <span class="font-bold">{{ order.items.length }} ítem(s)</span>
+      </div>
+      <div class="summary-item total mt-2 pt-2 border-t border-slate-200">
+        <span class="text-slate-800 font-bold">Total a Cobrar:</span>
+        <span class="text-lg font-black text-primary-600">Q{{ order.total.toLocaleString() }}</span>
+      </div>
     </div>
     
-    <div class="order-actions">
-      <button @click="$emit('view-detail', order.id)" class="action-btn detail-btn">
-        <i class="fas fa-eye"></i> Ver Detalle
+    <div class="order-status mt-2">
+      <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Estado del Pedido</label>
+      <div class="relative group">
+        <select v-model="localStatus" @change="updateStatus" class="status-select appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold w-full focus:ring-4 focus:ring-primary-500/10 outline-none cursor-pointer">
+          <option value="pendiente">🟠 Pendiente</option>
+          <option value="procesando">🔵 Procesando</option>
+          <option value="verificado">🟢 Verificado</option>
+          <option value="empacado">🟣 Empacado</option>
+          <option value="enviado">🚢 Enviado</option>
+          <option value="entregado">✅ Entregado</option>
+          <option value="completado">🏆 Completado</option>
+          <option value="cancelado">🔴 Cancelado</option>
+        </select>
+        <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[10px]"></i>
+      </div>
+    </div>
+    
+    <div class="order-actions mt-4 flex gap-3">
+      <button @click="$emit('view-detail', order.id)" class="flex-1 bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all">
+        Gestionar Pedido
       </button>
-      <a :href="'mailto:' + order.cliente.email" class="action-btn email-btn">
-        <i class="fas fa-envelope"></i> actualizar 
-      </a>
+      <button @click="printCompact" class="w-12 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all">
+        <i class="fas fa-print"></i>
+      </button>
     </div>
   </div>
 </template>
@@ -74,14 +79,24 @@ export default {
   },
   methods: {
     formatDate(date) {
-      const options = { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' };
-      return date.toLocaleDateString('es-GT', options);
+      if (!date) return 'Sin fecha';
+      const d = date.toDate ? date.toDate() : new Date(date);
+      return new Intl.DateTimeFormat('es-GT', { 
+        day: 'numeric', 
+        month: 'short', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(d);
     },
     updateStatus() {
       this.$emit('status-updated', {
         orderId: this.order.id,
         newStatus: this.localStatus
       });
+    },
+    printCompact() {
+      window.print();
     }
   }
 };

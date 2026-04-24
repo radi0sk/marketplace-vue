@@ -1,77 +1,156 @@
 <template>
-  <div class="admin-dashboard">
-    <h1>Panel de Control Administrativo</h1>
-    <nav class="admin-nav">
-      <router-link 
-        v-for="link in adminLinks" 
-        :key="link.path" 
-        :to="link.path"
-        active-class="active"
-      >
-        <i :class="link.icon"></i> {{ link.text }}
-      </router-link>
-    </nav>
-    <div class="admin-content">
-      <router-view></router-view>
-    </div>
+  <div class="min-h-screen bg-slate-50 flex">
+    <!-- Sidebar for Desktop -->
+    <aside 
+      class="fixed inset-y-0 left-0 z-[100] w-72 bg-white border-r border-slate-200 transform lg:translate-x-0 transition-transform duration-300 ease-in-out"
+      :class="{ '-translate-x-full': !isSidebarOpen }"
+    >
+      <div class="h-full flex flex-col">
+        <!-- Logo Section -->
+        <div class="p-8 flex items-center gap-3">
+          <div class="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg shadow-primary-200">
+            <i class="fas fa-rocket"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-slate-800 leading-tight">Admin</h2>
+            <p class="text-xs font-semibold text-primary-600 uppercase tracking-widest">Marketplace</p>
+          </div>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="flex-1 px-4 space-y-2 mt-4">
+          <router-link 
+            v-for="link in adminLinks" 
+            :key="link.path" 
+            :to="link.path"
+            class="flex items-center gap-3 px-4 py-3.5 rounded-xl text-slate-600 font-medium hover:bg-slate-50 hover:text-primary-600 transition-all group"
+            active-class="active-nav-link"
+          >
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-100 group-hover:bg-primary-50 transition-colors nav-icon-bg">
+              <i :class="[link.icon, 'transition-colors']"></i>
+            </div>
+            {{ link.text }}
+          </router-link>
+        </nav>
+
+        <!-- Sidebar Footer -->
+        <div class="p-4 border-t border-slate-100">
+          <div class="bg-slate-50 rounded-2xl p-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 overflow-hidden">
+               <img src="https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff" alt="Avatar">
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-bold text-slate-800 truncate">Administrador</p>
+              <p class="text-xs text-slate-500 truncate">admin@celularesatitlan.com</p>
+            </div>
+            <button class="text-slate-400 hover:text-rose-500 transition-colors">
+              <i class="fas fa-sign-out-alt"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 lg:ml-72 min-w-0 transition-all duration-300 pb-20 lg:pb-0">
+      <!-- Top Header -->
+      <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <button 
+            @click="isSidebarOpen = !isSidebarOpen" 
+            class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+          >
+            <i class="fas" :class="isSidebarOpen ? 'fa-times' : 'fa-bars'"></i>
+          </button>
+          <span class="lg:hidden text-sm font-black text-slate-400 uppercase tracking-widest">{{ $route.path.split('/').pop() }}</span>
+        </div>
+
+        <div class="flex items-center gap-4 ml-auto">
+          <div class="hidden sm:flex items-center bg-slate-100 px-4 py-2 rounded-xl text-slate-500 text-sm gap-2">
+            <i class="far fa-calendar"></i>
+            <span>{{ currentDate }}</span>
+          </div>
+          
+          <button class="relative p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors">
+            <i class="far fa-bell text-xl"></i>
+            <span class="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
+          </button>
+        </div>
+      </header>
+
+      <!-- View Content -->
+      <div class="max-w-[1600px] mx-auto">
+        <router-view v-slot="{ Component }">
+          <transition 
+            name="fade-slide" 
+            mode="out-in"
+          >
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </div>
+    </main>
+
+    <!-- Overlay for mobile sidebar -->
+    <div 
+      v-if="isSidebarOpen" 
+      @click="isSidebarOpen = false"
+      class="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm lg:hidden transition-opacity"
+    ></div>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'AdminDashboard',
-  data() {
-    
-    return {
-      adminLinks: [
-        { path: '/admin/products', text: 'Gestión de Productos', icon: 'fas fa-boxes' },
-        { path: '/admin/orders', text: 'Gestión de Pedidos', icon: 'fas fa-clipboard-list' },
-        { path: '/admin/sales-statistics', text: 'Estadísticas', icon: 'fas fa-chart-line' }
-      ]
-    };
-  }
-};
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+
+const isSidebarOpen = ref(false);
+
+const adminLinks = [
+  { path: '/admin/products', text: 'Inventario', icon: 'fas fa-boxes' },
+  { path: '/admin/orders', text: 'Pedidos', icon: 'fas fa-shopping-bag' },
+  { path: '/admin/users', text: 'Usuarios', icon: 'fas fa-users-cog' },
+  { path: '/admin/sales-statistics', text: 'Estadísticas', icon: 'fas fa-chart-pie' },
+  { path: '/admin/settings', text: 'Configuración', icon: 'fas fa-cog' }
+];
+
+const currentDate = computed(() => {
+  return new Intl.DateTimeFormat('es-GT', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+});
 </script>
 
 <style scoped>
-.admin-dashboard {
-  padding: 1rem;
+.active-nav-link {
+  background-color: #f8fafc !important;
+  color: #2563eb !important;
 }
 
-.admin-nav {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #eee;
-  flex-wrap: wrap;
+.active-nav-link .nav-icon-bg {
+  background-color: #eff6ff !important;
 }
 
-.admin-nav a {
-  padding: 0.75rem 1.5rem;
-  text-decoration: none;
-  color: #2c3e50;
-  border-radius: 4px;
-  transition: all 0.3s;
+.active-nav-link i {
+  color: #2563eb !important;
 }
 
-.admin-nav a:hover {
-  background-color: #f0f0f0;
+/* Transitions */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.3s ease;
 }
 
-.admin-nav a.active {
-  background-color: #42b983;
-  color: white;
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
 }
 
-.admin-nav i {
-  margin-right: 0.5rem;
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 
-.admin-content {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+@media (max-width: 1023px) {
+  .sidebar-hidden {
+    transform: translateX(-100%);
+  }
 }
 </style>
