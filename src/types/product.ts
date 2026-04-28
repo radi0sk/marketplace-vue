@@ -14,7 +14,8 @@ export interface Product {
   name: string;
   description: string;
   sku: string;
-  price: number;
+  price: number; // Regular Price (with card surcharge)
+  cashPrice?: number; // Offer Price (cash payment)
   comparePrice?: number;
   wholesaleMin: number;
   wholesalePrice: number;

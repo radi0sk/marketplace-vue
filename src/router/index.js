@@ -19,6 +19,7 @@ const Profile = () => import('@/views/user/Profile.vue');
 const FavoritesView = () => import('@/views/user/FavoritesView.vue');
 const PurchaseHistory = () => import('@/views/user/PurchaseHistory.vue');
 const UserOrderDetail = () => import('@/views/user/OrderDetail.vue');
+const PartnerDashboard = () => import('@/views/user/PartnerDashboard.vue');
 
 // Componentes de admin
 const AdminDashboard = () => import('@/views/admin/AdminDashboard.vue');
@@ -94,6 +95,12 @@ const routes = [
     props: true
   },
   {
+    path: "/partner/dashboard",
+    name: "PartnerDashboard",
+    component: PartnerDashboard,
+    meta: { title: "Panel de Socio", requiresAuth: true }
+  },
+  {
     path: "/pagar",
     name: "Pagar",
     component: Pagar,
@@ -112,7 +119,7 @@ const routes = [
     path: "/admin",
     name: "AdminDashboard",
     component: AdminDashboard,
-    meta: { title: "Panel de Administración", requiresAuth: true, requiresAdmin: true },
+    meta: { title: "Panel de Administración", requiresAuth: true, requiresPartner: true },
     children: [
       {
         path: "products",
@@ -200,25 +207,36 @@ router.beforeEach(async (to, from, next) => {
 
   // Obtener rol del usuario si está autenticado
   let userRole = null;
+  let isPartner = false;
   if (currentUser) {
     try {
       const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-      userRole = userDoc.exists() ? userDoc.data().role : 'cliente';
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        userRole = data.role;
+        isPartner = data.role === 'admin' || data.role === 'mayorista' || data.isPartner;
+      } else {
+        userRole = 'cliente';
+      }
     } catch (error) {
       console.error('Error obteniendo rol del usuario:', error);
       userRole = 'cliente';
     }
   }
 
+  const requiresPartner = to.matched.some(record => record.meta.requiresPartner);
+
   // Lógica de redirección
   if (requiresGuest && currentUser) {
-    next('/'); // Usuario autenticado no puede acceder a páginas de invitado
+    next('/');
   } else if (requiresAuth && !currentUser) {
-    next('/login'); // Usuario no autenticado intentando acceder a página protegida
+    next('/login');
   } else if (requiresAdmin && userRole !== 'admin') {
-    next('/'); // Usuario no admin intentando acceder a página de admin
+    next('/');
+  } else if (requiresPartner && !isPartner) {
+    next('/');
   } else {
-    next(); // Todo en orden, permitir navegación
+    next();
   }
 });
 

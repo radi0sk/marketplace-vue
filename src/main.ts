@@ -12,7 +12,7 @@ import './assets/main.css';
 // Firebase
 import { auth, db } from "@/services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, updateDoc, increment } from "firebase/firestore";
+import { doc, getDoc, updateDoc, increment } from "firebase/firestore";
 
 // FontAwesome
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -37,34 +37,38 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { faHeart as farHeart } from '@fortawesome/free-regular-svg-icons';
 import { 
-  faFacebook, 
-  faInstagram, 
-  faTwitter 
+  faFacebook,
+  faInstagram,
+  faTwitter,
+  faWhatsapp,
+  faGoogle
 } from '@fortawesome/free-brands-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
 library.add(
-  faCartPlus, 
-  faCheckCircle, 
-  faSpinner, 
-  faHeart, 
-  farHeart,
-  faShoppingCart, 
-  faSearch,
-  faEye,
-  faCalendarAlt,
-  faThLarge,
-  faTag,
-  faHome,
-  faUser,
-  faEnvelope,
-  faPhone,
-  faPaperPlane,
-  faCaretDown,
-  faStar,
-  faFacebook,
-  faInstagram,
-  faTwitter
+  faCartPlus as any, 
+  faCheckCircle as any, 
+  faSpinner as any, 
+  faHeart as any, 
+  farHeart as any,
+  faShoppingCart as any, 
+  faSearch as any,
+  faEye as any,
+  faCalendarAlt as any,
+  faThLarge as any,
+  faTag as any,
+  faHome as any,
+  faUser as any,
+  faEnvelope as any,
+  faPhone as any,
+  faPaperPlane as any,
+  faCaretDown as any,
+  faStar as any,
+  faFacebook as any, 
+  faInstagram as any, 
+  faTwitter as any,
+  faWhatsapp as any,
+  faGoogle as any
 );
 
 const app = createApp(App);

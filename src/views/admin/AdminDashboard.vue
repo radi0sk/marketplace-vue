@@ -56,13 +56,10 @@
       <!-- Top Header -->
       <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-3 flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <button 
-            @click="isSidebarOpen = !isSidebarOpen" 
-            class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-          >
-            <i class="fas" :class="isSidebarOpen ? 'fa-times' : 'fa-bars'"></i>
-          </button>
-          <span class="lg:hidden text-sm font-black text-slate-400 uppercase tracking-widest">{{ $route.path.split('/').pop() }}</span>
+          <div class="lg:hidden w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center text-white text-sm shadow-md">
+            <i class="fas fa-rocket"></i>
+          </div>
+          <span class="text-sm font-black text-slate-800 uppercase tracking-widest">{{ $route.meta.title || 'Panel' }}</span>
         </div>
 
         <div class="flex items-center gap-4 ml-auto">
@@ -91,12 +88,28 @@
       </div>
     </main>
 
-    <!-- Overlay for mobile sidebar -->
+    <!-- Overlay for mobile sidebar (Optional if using Bottom Nav) -->
     <div 
       v-if="isSidebarOpen" 
       @click="isSidebarOpen = false"
       class="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm lg:hidden transition-opacity"
     ></div>
+
+    <!-- Mobile Bottom Navigation (Native App Style) -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-[100] bg-white/90 backdrop-blur-xl border-t border-slate-100 flex justify-around items-center px-2 py-3 pb-8">
+      <router-link 
+        v-for="link in adminLinks" 
+        :key="link.path" 
+        :to="link.path"
+        class="flex flex-col items-center gap-1 px-3 py-1 group"
+        active-class="mobile-active-link"
+      >
+        <div class="w-10 h-6 flex items-center justify-center rounded-full group-active:scale-90 transition-transform">
+           <font-awesome-icon :icon="link.icon" class="text-xl text-slate-400 group-[.mobile-active-link]:text-primary-600" />
+        </div>
+        <span class="text-[10px] font-black uppercase tracking-tighter text-slate-400 group-[.mobile-active-link]:text-primary-600">{{ link.text }}</span>
+      </router-link>
+    </nav>
   </div>
 </template>
 
@@ -106,11 +119,11 @@ import { ref, computed } from 'vue';
 const isSidebarOpen = ref(false);
 
 const adminLinks = [
-  { path: '/admin/products', text: 'Inventario', icon: 'fas fa-boxes' },
-  { path: '/admin/orders', text: 'Pedidos', icon: 'fas fa-shopping-bag' },
-  { path: '/admin/users', text: 'Usuarios', icon: 'fas fa-users-cog' },
-  { path: '/admin/sales-statistics', text: 'Estadísticas', icon: 'fas fa-chart-pie' },
-  { path: '/admin/settings', text: 'Configuración', icon: 'fas fa-cog' }
+  { path: '/admin/products', text: 'Stock', icon: 'boxes' },
+  { path: '/admin/orders', text: 'Pedidos', icon: 'shopping-bag' },
+  { path: '/admin/users', text: 'Usuarios', icon: 'users-cog' },
+  { path: '/admin/sales-statistics', text: 'Stats', icon: 'chart-pie' },
+  { path: '/admin/settings', text: 'Ajustes', icon: 'cog' }
 ];
 
 const currentDate = computed(() => {
@@ -130,6 +143,14 @@ const currentDate = computed(() => {
 
 .active-nav-link i {
   color: #2563eb !important;
+}
+
+.mobile-active-link div {
+  background-color: #eff6ff;
+}
+
+.mobile-active-link span {
+  color: #2563eb;
 }
 
 /* Transitions */

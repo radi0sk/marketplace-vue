@@ -8,6 +8,7 @@ import { useTestimonials } from '@/composables/useTestimonials';
 import ProductCard from '@/components/ProductCard.vue';
 import { db } from '@/services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { useSEO } from '@/composables/useSEO';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -15,13 +16,31 @@ const { products, loading: productsLoading } = useProducts();
 const { categories, loading: categoriesLoading } = useCategories();
 const { testimonials, loading: testimonialsLoading } = useTestimonials();
 
+useSEO('Inicio', 'Tu aliado experto en el campo. Compra maquinaria especial, nutrición y protección para tus cultivos en un solo lugar.');
+
 // State
 const userFavorites = ref<string[]>([]);
 const marcasAliadas = ref<{name: string, logo: string}[]>([]);
-const banners = ref<any[]>([]);
+const banners = ref<any[]>([{
+  badge: 'Lo mejor del campo a tu hogar',
+  title: 'Descubre la esencia de lo natural',
+  subtitle: 'Encuentra los mejores productos agrícolas y tecnología especializada al mejor precio del mercado.',
+  buttonText: 'Explorar Catálogo',
+  image: 'https://res.cloudinary.com/dsfnladar/image/upload/v1744246734/onqmux4dzpoqmmkdblhk.png',
+  link: '/products'
+}]);
 const currentBannerIdx = ref(0);
 
-const featuredProducts = computed(() => products.value.slice(0, 8));
+const featuredProducts = computed(() => {
+  // Sort by popularity (views) first, then rating
+  return [...products.value]
+    .sort((a, b) => {
+      const scoreA = (a.views || 0) + (a.rating || 0) * 10;
+      const scoreB = (b.views || 0) + (b.rating || 0) * 10;
+      return scoreB - scoreA;
+    })
+    .slice(0, 8);
+});
 
 const heroSettings = computed(() => banners.value[currentBannerIdx.value] || {
   badge: 'Lo mejor del campo a tu hogar',

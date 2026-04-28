@@ -2,8 +2,9 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { db, auth } from "@/services/firebase";
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, increment, collection, addDoc, query, where, getDocs, orderBy } from "firebase/firestore";
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useSEO } from '@/composables/useSEO';
 import { useCartStore } from '@/stores/useCartStore';
 import { useToast } from "vue-toastification";
 import type { Product } from '@/types';
@@ -12,13 +13,58 @@ const route = useRoute();
 const toast = useToast();
 const authStore = useAuthStore();
 const cartStore = useCartStore();
+const { updateSEO } = useSEO('Cargando producto...');
 
 const product = ref<Product | null>(null);
-const loading = ref(true);
-const quantity = ref(1);
-const mainImage = ref("");
-const isFavorite = ref(false);
 const loadingFavorite = ref(false);
+const questions = ref<any[]>([]);
+const newQuestion = ref("");
+const sendingQuestion = ref(false);
+
+const fetchQuestions = async () => {
+  try {
+    const q = query(
+      collection(db, "questions"), 
+      where("productId", "==", productId),
+      orderBy("createdAt", "desc")
+    );
+    const snap = await getDocs(q);
+    questions.value = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (e) {
+    console.error("Error fetching questions:", e);
+  }
+};
+
+const askQuestion = async () => {
+  if (!newQuestion.value.trim() || !authStore.isAuthenticated) return;
+  
+  try {
+    sendingQuestion.value = true;
+    await addDoc(collection(db, "questions"), {
+      productId,
+      vendorId: product.value?.vendorId || 'admin',
+      userId: authStore.user?.uid,
+      userName: authStore.user?.displayName || authStore.user?.email?.split('@')[0],
+      question: newQuestion.value,
+      answer: null,
+      createdAt: new Date().toISOString()
+    });
+    newQuestion.value = "";
+    toast.success("Tu pregunta ha sido enviada al vendedor");
+    fetchQuestions();
+  } catch (e) {
+    toast.error("Error al enviar pregunta");
+  } finally {
+    sendingQuestion.value = false;
+  }
+};
+
+const shareOnWhatsApp = () => {
+  if (!product.value) return;
+  const url = window.location.href;
+  const text = `🚜 *${product.value.name}*\n\n💰 Precio Efectivo: *Q${product.value.cashPrice || product.value.price}*\n💳 Precio Tarjeta: Q${product.value.price}\n\nVer detalles aquí: ${url}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+};
 
 const productId = route.params.id as string;
 
@@ -30,9 +76,20 @@ onMounted(async () => {
     
     if (docSnap.exists()) {
       product.value = { id: docSnap.id, ...docSnap.data() } as Product;
-      if (product.value.images?.length) {
-        mainImage.value = product.value.images[0];
-      }
+      mainImage.value = product.value.mainImage || product.value.images?.[0] || "";
+      
+      // Update SEO
+      updateSEO(
+        product.value.name, 
+        product.value.description?.substring(0, 160) || `Compra ${product.value.name} al mejor precio en Agro Guate.`
+      );
+      
+      // Increment views tracking
+      updateDoc(docRef, {
+        views: increment(1)
+      }).catch(err => console.error("Error tracking view:", err));
+
+      fetchQuestions();
       await checkIfFavorite();
     } else {
       toast.error("Producto no encontrado");
@@ -165,15 +222,25 @@ const handleAddToCart = () => {
                   class="w-10 h-10 flex items-center justify-center text-slate-600 hover:bg-slate-50 rounded-xl transition-all"
                 >+</button>
               </div>
-              
-              <button 
-                @click="handleAddToCart"
-                class="flex-1 btn-primary !py-4 flex items-center justify-center gap-3 shadow-primary-500/30"
-              >
-                <font-awesome-icon icon="cart-plus" />
-                Agregar al Carrito
-              </button>
             </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-center gap-4">
+            <button 
+              @click="shareOnWhatsApp"
+              class="w-full sm:w-auto px-8 py-4 bg-emerald-600 text-white rounded-2xl font-bold shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all flex items-center justify-center gap-3"
+            >
+              <i class="fab fa-whatsapp text-xl"></i>
+              Compartir por WhatsApp
+            </button>
+            
+            <button 
+              @click="handleAddToCart"
+              class="flex-1 w-full sm:w-auto px-8 py-4 bg-primary-600 text-white rounded-2xl font-bold shadow-xl shadow-primary-600/20 hover:bg-primary-700 transition-all flex items-center justify-center gap-3"
+            >
+              <font-awesome-icon icon="cart-plus" />
+              Agregar al Carrito
+            </button>
           </div>
 
           <div class="flex gap-4">
@@ -241,6 +308,65 @@ const handleAddToCart = () => {
                    <span class="text-xs font-medium text-slate-800">{{ spec.value }}</span>
                 </div>
              </div>
+          </div>
+        </div>
+      </div>
+      <div class="mt-20 border-t border-slate-100 pt-10">
+        <h2 class="text-3xl font-black text-slate-800 font-outfit mb-8">Preguntas y Respuestas</h2>
+        
+        <!-- Ask Form -->
+        <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 mb-8">
+          <div v-if="!authStore.isAuthenticated" class="text-center py-4">
+            <p class="text-slate-500 font-medium mb-4">Inicia sesión para hacer una pregunta al vendedor</p>
+            <router-link to="/login" class="btn-primary !px-8">Iniciar Sesión</router-link>
+          </div>
+          <div v-else class="space-y-4">
+            <textarea 
+              v-model="newQuestion" 
+              placeholder="Escribe tu duda sobre este producto aquí..." 
+              class="w-full px-5 py-4 bg-slate-50 rounded-2xl font-medium text-slate-800 border-none focus:ring-2 focus:ring-primary-500/20 outline-none transition-all resize-none h-32"
+            ></textarea>
+            <div class="flex justify-end">
+              <button 
+                @click="askQuestion" 
+                :disabled="sendingQuestion || !newQuestion.trim()"
+                class="px-8 py-3 bg-primary-600 text-white rounded-xl font-bold shadow-lg shadow-primary-500/20 hover:bg-primary-700 disabled:opacity-50 transition-all"
+              >
+                {{ sendingQuestion ? 'Enviando...' : 'Preguntar al Vendedor' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Questions List -->
+        <div class="space-y-6">
+          <div v-for="q in questions" :key="q.id" class="space-y-4">
+            <div class="flex gap-4">
+              <div class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 font-black">
+                {{ q.userName?.[0]?.toUpperCase() || '?' }}
+              </div>
+              <div class="flex-1">
+                <p class="text-sm font-bold text-slate-800">{{ q.question }}</p>
+                <p class="text-[10px] text-slate-400 uppercase font-black mt-1">{{ q.userName }} • {{ new Date(q.createdAt).toLocaleDateString() }}</p>
+                
+                <div v-if="q.answer" class="mt-4 flex gap-4 bg-primary-50/50 p-4 rounded-2xl border border-primary-100">
+                   <div class="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center text-[10px] flex-shrink-0">
+                     <i class="fas fa-check"></i>
+                   </div>
+                   <div>
+                     <p class="text-sm font-medium text-slate-700"><span class="font-black text-primary-700 mr-1">Respuesta del vendedor:</span> {{ q.answer }}</p>
+                   </div>
+                </div>
+                <div v-else class="mt-2 text-[10px] font-bold text-amber-500 uppercase tracking-widest italic">
+                  Esperando respuesta del vendedor...
+                </div>
+              </div>
+            </div>
+            <div class="h-px bg-slate-50 w-full"></div>
+          </div>
+          
+          <div v-if="questions.length === 0" class="text-center py-10 text-slate-400 italic">
+            Nadie ha preguntado sobre este producto todavía. ¡Sé el primero!
           </div>
         </div>
       </div>

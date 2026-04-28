@@ -61,3 +61,18 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* Admin Utilities */
+@layer components {
+  .admin-page {
+    @apply p-4 lg:p-10 pb-32 lg:pb-10;
+  }
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

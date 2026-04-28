@@ -43,6 +43,12 @@ const toggleFavorite = async () => {
     console.error("Error toggling favorite:", error);
   }
 };
+
+const shareOnWhatsApp = () => {
+  const url = `https://celularesatitlan.web.app/product/${props.product.id}`;
+  const text = `🚜 *${props.product.name}*\n\n💰 Precio Efectivo: *Q${props.product.cashPrice || props.product.price}*\n💳 Precio Tarjeta: Q${props.product.price}\n\nVer detalles aquí: ${url}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+};
 </script>
 
 <template>
@@ -61,6 +67,13 @@ const toggleFavorite = async () => {
       
       <!-- Hover Actions -->
       <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300">
+        <button 
+          @click.prevent="shareOnWhatsApp"
+          class="w-10 h-10 bg-white shadow-xl rounded-full flex items-center justify-center text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all transform active:scale-90"
+          title="Compartir por WhatsApp"
+        >
+          <font-awesome-icon :icon="['fab', 'whatsapp']" />
+        </button>
         <button 
           @click.prevent="addToCart"
           class="w-10 h-10 bg-white shadow-xl rounded-full flex items-center justify-center text-primary-600 hover:bg-primary-600 hover:text-white transition-all transform active:scale-90"
@@ -84,13 +97,21 @@ const toggleFavorite = async () => {
       <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{{ product.categoria }}</p>
       <h3 class="text-sm font-bold text-slate-800 line-clamp-1 mb-2">{{ product.name }}</h3>
       
-      <div class="mt-auto flex items-end justify-between">
-        <div>
-          <span class="text-lg font-bold text-slate-900 font-outfit">${{ product.price }}</span>
-          <span class="block text-[10px] text-slate-400 italic">Vendido por {{ product.vendorName || 'Agro Guate' }}</span>
+      <div class="mt-4 p-2 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
+        <div class="flex items-center justify-between">
+           <span class="text-[9px] font-black text-slate-400 uppercase">Efectivo</span>
+           <span class="text-sm font-black text-primary-600">Q{{ product.cashPrice || product.price }}</span>
         </div>
-        <div class="flex items-center gap-1 text-amber-400 text-xs">
-          <font-awesome-icon icon="star" v-for="i in 5" :key="i" :class="i <= (product.rating || 4) ? 'text-amber-400' : 'text-slate-200'" />
+        <div class="flex items-center justify-between opacity-60">
+           <span class="text-[9px] font-bold text-slate-400 uppercase">Tarjeta</span>
+           <span class="text-xs font-bold text-slate-700">Q{{ product.price }}</span>
+        </div>
+      </div>
+      
+      <div class="mt-3 flex items-center justify-between">
+        <span class="text-[10px] text-slate-400 italic font-medium line-clamp-1">Por {{ product.vendorName || 'Agro Guate' }}</span>
+        <div class="flex items-center gap-0.5 text-amber-400 text-xs">
+          <font-awesome-icon icon="star" v-for="i in 5" :key="i" :class="i <= (product.rating || 4) ? 'text-amber-400' : 'text-slate-100'" />
         </div>
       </div>
     </router-link>

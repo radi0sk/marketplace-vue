@@ -2,7 +2,10 @@
 import { ref, onMounted } from 'vue';
 import { db } from '@/services/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { uploadFile } from '@/services/storage';
+import { getCategories } from '@/api/products';
+import { uploadImageToCloudinary } from '@/services/cloudinary';
+import { compressImage } from '@/utils/imageUtils';
+import type { Category } from '@/types/product';
 import { useToast } from 'vue-toastification';
 
 const toast = useToast();
@@ -11,12 +14,14 @@ const saving = ref(false);
 const activeTab = ref('general');
 const heroInput = ref<HTMLInputElement | null>(null);
 const brandLogoInputs = ref<Record<string, HTMLInputElement>>({});
+const categories = ref<Category[]>([]);
 
 const settings = ref({
   storeName: 'Agro Guate',
   contactEmail: 'ventas@agroguate.com',
   contactPhone: '+502 0000-0000',
   associateCommission: 10,
+  cardCommission: 5.5,
   currency: 'Q',
   shippingRates: [
     { category: 'General', cost: 50 },
@@ -42,7 +47,13 @@ const settings = ref({
 
 const loadSettings = async () => {
   try {
-    const docSnap = await getDoc(doc(db, 'settings', 'app'));
+    const [docSnap, fetchedCategories] = await Promise.all([
+      getDoc(doc(db, 'settings', 'app')),
+      getCategories()
+    ]);
+
+    categories.value = fetchedCategories;
+
     if (docSnap.exists()) {
       settings.value = { ...settings.value, ...docSnap.data() };
     }
@@ -76,12 +87,15 @@ const handleLogoUpload = async (event: any, index: number) => {
   if (!file) return;
 
   try {
-    const path = `brands/${settings.value.marcasAliadas[index].name || 'brand'}-${Date.now()}`;
-    const url = await uploadFile(file, path);
+    saving.value = true;
+    const compressed = await compressImage(file, 800); // Logos don't need high res
+    const url = await uploadImageToCloudinary(compressed);
     settings.value.marcasAliadas[index].logo = url;
     toast.success('Logo subido');
   } catch (error) {
     toast.error('Error al subir logo');
+  } finally {
+    saving.value = false;
   }
 };
 
@@ -91,14 +105,14 @@ const handleHeroUpload = async (event: any, index: number) => {
 
   try {
     saving.value = true;
-    const extension = file.name.split('.').pop();
-    const path = `home/banner-${Date.now()}.${extension}`;
-    const url = await uploadFile(file, path);
+    toast.info('Optimizando imagen...', { timeout: 2000 });
+    const compressed = await compressImage(file, 1920); // Banners need full width
+    const url = await uploadImageToCloudinary(compressed);
     settings.value.banners[index].image = url;
-    toast.success('Imagen del banner actualizada');
+    toast.success('Imagen del banner lista');
   } catch (error) {
     console.error('Error uploading banner:', error);
-    toast.error('Error al subir imagen. Verifica tu conexión.');
+    toast.error('Error al subir imagen. Verifica el tamaño o tu conexión.');
   } finally {
     saving.value = false;
   }
@@ -135,6 +149,11 @@ const triggerBrandLogo = (index: number) => {
 const removeShippingRate = (index: number) => {
   settings.value.shippingRates.splice(index, 1);
 };
+
+const triggerBannerInput = (index: number) => {
+  const el = document.getElementById(`banner_input_${index}`);
+  if (el) el.click();
+};
 </script>
 
 <template>
@@ -157,13 +176,13 @@ const removeShippingRate = (index: number) => {
     </div>
 
     <!-- Tabs Nav -->
-    <div class="flex gap-2 p-1 bg-slate-100 rounded-3xl w-fit">
+    <div class="flex gap-2 p-1 bg-slate-100 rounded-[2rem] overflow-x-auto max-w-full no-scrollbar overscroll-x-contain">
       <button 
         v-for="tab in ['general', 'ventas', 'envios', 'marcas', 'banners']" 
         :key="tab"
         @click="activeTab = tab"
         :class="[
-          'px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all',
+          'px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all flex-shrink-0',
           activeTab === tab ? 'bg-white text-primary-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
         ]"
       >
@@ -219,6 +238,15 @@ const removeShippingRate = (index: number) => {
               <span class="absolute right-6 top-1/2 -translate-y-1/2 font-bold text-slate-400">%</span>
             </div>
             <p class="text-[10px] text-slate-400 italic mt-1 text-balance">Esta comisión se calcula automáticamente sobre cada venta que realice un asociado en tu plataforma.</p>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-xs font-black text-slate-400 uppercase tracking-widest">Recargo por Tarjeta / Pasarela (%)</label>
+            <div class="relative">
+              <input v-model.number="settings.cardCommission" type="number" step="0.1" class="input-modern pr-12" />
+              <span class="absolute right-6 top-1/2 -translate-y-1/2 font-bold text-slate-400">%</span>
+            </div>
+            <p class="text-[10px] text-slate-400 italic mt-1 text-balance">Este porcentaje se sumará automáticamente al precio base para calcular el precio final con tarjeta.</p>
           </div>
         </div>
       </section>
@@ -336,10 +364,39 @@ const removeShippingRate = (index: number) => {
                       <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Botón</label>
                       <input v-model="banner.buttonText" type="text" class="input-modern !py-3" />
                     </div>
-                    <div class="space-y-1">
-                      <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Enlace</label>
-                      <input v-model="banner.link" type="text" class="input-modern !py-3" />
+                  <div class="space-y-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <label class="text-[10px] font-black text-primary-600 uppercase tracking-widest flex items-center gap-2">
+                       <i class="fas fa-link"></i> Ayudante de Enlace
+                    </label>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                       <div class="space-y-1">
+                          <p class="text-[9px] font-bold text-slate-400 uppercase">Ir a Marca</p>
+                          <select 
+                            @change="(e) => banner.link = `/products?brand=${(e.target as HTMLSelectElement).value}`"
+                            class="w-full bg-white border-none rounded-lg py-2 px-3 text-xs font-bold shadow-sm"
+                          >
+                             <option value="">Seleccionar...</option>
+                             <option v-for="marca in settings.marcasAliadas" :key="marca.name" :value="marca.name">{{ marca.name }}</option>
+                          </select>
+                       </div>
+                       <div class="space-y-1">
+                          <p class="text-[9px] font-bold text-slate-400 uppercase">Ir a Categoría</p>
+                          <select 
+                            @change="(e) => banner.link = `/products?category=${(e.target as HTMLSelectElement).value}`"
+                            class="w-full bg-white border-none rounded-lg py-2 px-3 text-xs font-bold shadow-sm"
+                          >
+                             <option value="">Seleccionar...</option>
+                             <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+                          </select>
+                       </div>
                     </div>
+
+                    <div class="space-y-1">
+                      <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Enlace Manual (URL)</label>
+                      <input v-model="banner.link" type="text" class="w-full bg-white border border-slate-100 rounded-xl py-3 px-4 text-xs font-bold focus:ring-2 focus:ring-primary-500/20" />
+                    </div>
+                  </div>
                   </div>
                 </div>
               </div>
@@ -348,7 +405,7 @@ const removeShippingRate = (index: number) => {
               <div class="space-y-6">
                 <div class="space-y-2">
                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Imagen de Fondo</label>
-                   <div @click="document.getElementById(`banner_input_${index}`).click()" class="aspect-video bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer overflow-hidden group/img relative transition-all hover:border-primary-400">
+                   <div @click="triggerBannerInput(index)" class="aspect-video bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer overflow-hidden group/img relative transition-all hover:border-primary-400">
                       <img v-if="banner.image" :src="banner.image" class="w-full h-full object-cover" />
                       <div v-else class="text-center">
                          <i class="fas fa-cloud-upload-alt text-3xl text-slate-300 mb-2"></i>

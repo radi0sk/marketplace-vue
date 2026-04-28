@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useProducts } from '@/composables/useProducts';
 import { useCategories } from '@/composables/useCategories';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useSEO } from '@/composables/useSEO';
 import ProductCard from '@/components/ProductCard.vue';
 import { db } from '@/services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -15,9 +16,13 @@ import {
 } from '@/constants/productConstants';
 
 const route = useRoute();
+const router = useRouter();
 const authStore = useAuthStore();
 const { products, loading: productsLoading } = useProducts();
 const { categories, loading: categoriesLoading } = useCategories();
+const brandInfo = ref<any>(null);
+
+const { updateSEO } = useSEO('Catálogo', 'Explora nuestra amplia gama de productos agrícolas, maquinaria e insumos de las mejores marcas.');
 
 const isFilterDrawerOpen = ref(false);
 
@@ -50,7 +55,29 @@ const fetchFavorites = async () => {
   }
 };
 
-onMounted(fetchFavorites);
+const fetchStoreData = async () => {
+  try {
+    const settingsSnap = await getDoc(doc(db, 'settings', 'app'));
+    if (settingsSnap.exists()) {
+      const marcas = settingsSnap.data().marcasAliadas || [];
+      if (activeBrand.value) {
+        brandInfo.value = marcas.find((m: any) => m.name.toLowerCase() === activeBrand.value?.toLowerCase());
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching brand data:', error);
+  }
+};
+
+onMounted(() => {
+  fetchFavorites();
+  fetchStoreData();
+});
+
+watch(activeBrand, (newBrand) => {
+  if (newBrand) fetchStoreData();
+  else brandInfo.value = null;
+});
 
 // Filtering Logic
 const filteredProducts = computed(() => {
@@ -120,15 +147,30 @@ const handleToggleFavorite = (productId: string) => {
 };
 
 const clearFilters = () => {
+  searchQuery.value = '';
+  activeCategory.value = null;
+  activeLinea.value = null;
+  activeEspecie.value = null;
   activeEtapa.value = null;
   activeBrand.value = null;
-  searchQuery.value = '';
   minPrice.value = null;
   maxPrice.value = null;
-  currentPage.value = 1;
+  router.push('/products');
+};
 
-  // Clear query params without full reload
-  router.replace({ query: {} });
+const shareFilteredView = () => {
+  const baseUrl = 'https://celularesatitlan.web.app/products';
+  const params = new URLSearchParams();
+  if (searchQuery.value) params.append('search', searchQuery.value);
+  if (activeCategory.value) params.append('category', activeCategory.value);
+  if (activeBrand.value) params.append('brand', activeBrand.value);
+  
+  const fullUrl = `${baseUrl}?${params.toString()}`;
+  let filterName = searchQuery.value || (activeCategory.value ? 'esta categoría' : 'estos productos');
+  if (activeBrand.value) filterName = `productos de ${activeBrand.value}`;
+
+  const text = `🚜 *Catálogo Seleccionado de Agro Guate*\n\nHe preparado esta selección de *${filterName}* especialmente para ti.\n\n🔗 Ver productos: ${fullUrl}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
 };
 
 const getCategoryName = (id: string) => categories.value.find(c => c.id === id)?.name || 'Todos';
@@ -145,7 +187,19 @@ watch([searchQuery, activeCategory, activeLinea, activeBrand, minPrice, maxPrice
 
 // Watch route query to update brand filter if user navigates again
 watch(() => route.query.brand, (newBrand) => {
-  if (newBrand) activeBrand.value = newBrand as string;
+  if (newBrand) {
+    activeBrand.value = newBrand as string;
+    updateSEO(`Productos ${newBrand}`, `Mira nuestro catálogo completo de ${newBrand} en Agro Guate.`);
+  } else {
+    updateSEO('Catálogo');
+  }
+});
+
+watch(activeCategory, (newCat) => {
+  if (newCat) {
+    const catName = categories.value.find(c => c.id === newCat)?.name || 'Categoría';
+    updateSEO(catName, `Encuentra lo mejor en ${catName} para tu finca en Agro Guate.`);
+  }
 });
 
 // Helper to get categories present in a specific line
@@ -328,6 +382,39 @@ const getProductCountByLineAndCat = (lineaId: string | null, catId: string | nul
 
     <!-- Main Content -->
     <main class="flex-1 space-y-6">
+      <!-- Special Brand Header -->
+      <Transition name="fade">
+        <div v-if="activeBrand && brandInfo" class="premium-card bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl overflow-hidden relative group">
+           <div class="absolute -right-20 -top-20 w-64 h-64 bg-primary-50 rounded-full blur-3xl opacity-50 group-hover:bg-primary-100 transition-colors"></div>
+           
+           <div class="relative flex flex-col md:flex-row items-center gap-8">
+              <div class="w-32 h-32 bg-slate-50 rounded-3xl p-4 flex items-center justify-center border border-slate-100 shadow-sm transition-transform group-hover:scale-105">
+                 <img v-if="brandInfo.logo" :src="brandInfo.logo" :alt="activeBrand" class="max-w-full max-h-full object-contain" />
+                 <i v-else class="fas fa-certificate text-4xl text-primary-200"></i>
+              </div>
+              
+              <div class="flex-1 text-center md:text-left">
+                 <div class="flex items-center justify-center md:justify-start gap-3 mb-2">
+                    <h2 class="text-4xl font-black text-slate-900 tracking-tight">{{ activeBrand }}</h2>
+                    <span class="px-3 py-1 bg-primary-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-primary-500/20">Oficial</span>
+                 </div>
+                 <p class="text-slate-500 font-medium max-w-xl text-balance">
+                    Explora todo el catálogo de productos de <strong>{{ activeBrand }}</strong>. 
+                    Soluciones tecnológicas y agrícolas de alta calidad seleccionadas especialmente para aumentar tu productividad.
+                 </p>
+                 <div class="flex items-center justify-center md:justify-start gap-6 mt-6">
+                    <div class="bg-slate-50 px-4 py-2 rounded-2xl">
+                       <p class="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">Productos</p>
+                       <p class="text-xl font-black text-slate-800 leading-none">{{ filteredProducts.length }}</p>
+                    </div>
+                    <button @click="clearFilters" class="text-xs font-black text-primary-600 uppercase tracking-widest hover:underline flex items-center gap-2">
+                       <i class="fas fa-arrow-left"></i> Ver Todos Los Fabricantes
+                    </button>
+                 </div>
+              </div>
+           </div>
+        </div>
+      </Transition>
       <!-- Filter Bar -->
       <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-3xl border border-slate-100">
         <div class="flex flex-wrap items-center gap-2">
@@ -344,10 +431,16 @@ const getProductCountByLineAndCat = (lineaId: string | null, catId: string | nul
             Marca: {{ activeBrand }}
             <button @click="activeBrand = null; router.replace({ query: { ...route.query, brand: undefined } })" class="hover:text-amber-900">×</button>
           </div>
-          <button v-if="activeCategory || searchQuery || minPrice || maxPrice" 
+          <button v-if="activeCategory || searchQuery || minPrice || maxPrice || activeBrand" 
                   @click="clearFilters" 
                   class="text-[10px] font-bold text-rose-500 hover:underline uppercase">
             Limpiar todo
+          </button>
+          
+          <button v-if="activeCategory || searchQuery || activeBrand" 
+                  @click="shareFilteredView"
+                  class="flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase rounded-full hover:bg-emerald-600 hover:text-white transition-all shadow-sm">
+            <font-awesome-icon :icon="['fab', 'whatsapp']" /> Compartir esta selección
           </button>
         </div>
 

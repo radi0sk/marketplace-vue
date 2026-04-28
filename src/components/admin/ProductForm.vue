@@ -9,7 +9,10 @@ import {
   getCategories, 
   addCategory as createCategory 
 } from '@/api/products';
+import { db } from '@/services/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { uploadImageToCloudinary } from '@/services/cloudinary';
+import { compressImage } from '@/utils/imageUtils';
 import type { Product, Category, Feature } from '@/types/product';
 import { 
   LINEAS_PRODUCCION, 
@@ -38,11 +41,13 @@ const categories = ref<Category[]>([]);
 const uploadedImages = ref<{ file?: File; preview: string; url?: string }[]>([]);
 const showCategoryModal = ref(false);
 const categoryLoading = ref(false);
+const cardCommission = ref(5.5); // Default
 
 const product = ref<Partial<Product>>({
   name: '',
   description: '',
   price: 0,
+  cashPrice: 0,
   stock: 0,
   categoria: '',
   brand: '',
@@ -79,10 +84,17 @@ const newFeature = ref<Feature>({
 const isFormValid = computed(() => {
   return product.value.name && 
          product.value.description && 
-         product.value.price! > 0 && 
+         product.value.cashPrice! > 0 && 
          product.value.categoria &&
          product.value.lineaProduccion;
 });
+
+// Watch cashPrice to calculate cardPrice
+const calculateCardPrice = (val: number) => {
+  if (val) {
+    product.value.price = Number((val * (1 + cardCommission.value / 100)).toFixed(2));
+  }
+};
 
 // Initial Load
 onMounted(async () => {
@@ -93,7 +105,9 @@ onMounted(async () => {
 
     const settingsSnap = await getDoc(doc(db, 'settings', 'app'));
     if (settingsSnap.exists()) {
-      marcasAliadas.value = settingsSnap.data().marcasAliadas || [];
+      const data = settingsSnap.data();
+      marcasAliadas.value = data.marcasAliadas || [];
+      cardCommission.value = data.cardCommission || 5.5;
     }
 
     if (props.isEdit && props.id) {
@@ -212,7 +226,8 @@ const saveCategory = async () => {
   try {
     let imageUrl = '';
     if (newCategory.value.image) {
-      imageUrl = await uploadImageToCloudinary(newCategory.value.image);
+      const compressed = await compressImage(newCategory.value.image, 800);
+      imageUrl = await uploadImageToCloudinary(compressed);
     }
     
     const categoryResult = await createCategory({
@@ -246,7 +261,9 @@ const submitProduct = async () => {
       if (img.url) {
         imageUrls.push(img.url);
       } else if (img.file) {
-        const url = await uploadImageToCloudinary(img.file);
+        toast.info(`Optimizando imagen ${imageUrls.length + 1}...`, { timeout: 1000 });
+        const compressed = await compressImage(img.file, 1200);
+        const url = await uploadImageToCloudinary(compressed);
         imageUrls.push(url);
       }
     }
@@ -418,11 +435,29 @@ const submitProduct = async () => {
             <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 border-l-4 border-emerald-500 pl-4">Valores</h3>
             
             <div class="space-y-6">
-              <div>
-                <label class="block text-xs font-bold text-slate-500 mb-2">Precio de Venta</label>
-                <div class="relative group">
-                  <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400 group-focus-within:text-primary-600">Q</span>
-                  <input v-model.number="product.price" type="number" required step="0.01" class="w-full pl-9 pr-5 py-3 bg-slate-50 border-none rounded-xl font-bold text-slate-800 focus:ring-2 focus:ring-primary-500/20 transition-all" />
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-primary-600 mb-2">Precio Efectivo (Base)</label>
+                  <div class="relative group">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-primary-400 group-focus-within:text-primary-600">Q</span>
+                    <input 
+                      v-model.number="product.cashPrice" 
+                      @input="calculateCardPrice(($event.target as HTMLInputElement).valueAsNumber)"
+                      type="number" 
+                      step="0.01" 
+                      required
+                      class="w-full pl-9 pr-5 py-3 bg-primary-50 border-2 border-primary-100 rounded-xl font-bold text-primary-800 focus:ring-2 focus:ring-primary-500/20 transition-all outline-none" 
+                    />
+                  </div>
+                  <p class="text-[9px] text-primary-400 font-bold mt-1 uppercase italic">* Este es tu precio base libre de comisiones</p>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 mb-2">Precio Tarjeta (Con +{{ cardCommission }}%)</label>
+                  <div class="relative group">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400 group-focus-within:text-primary-600">Q</span>
+                    <input v-model.number="product.price" type="number" step="0.01" class="w-full pl-9 pr-5 py-3 bg-slate-100 border-none rounded-xl font-bold text-slate-800 focus:ring-2 focus:ring-primary-500/20 transition-all" />
+                  </div>
+                  <p class="text-[9px] text-slate-400 font-bold mt-1 uppercase italic">Calculado según pasarela de pago</p>
                 </div>
               </div>
 
