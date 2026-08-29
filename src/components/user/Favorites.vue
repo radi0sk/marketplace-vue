@@ -51,12 +51,14 @@
 import {  db } from "@/services/firebase";
 import { doc, getDoc, updateDoc, arrayRemove } from "firebase/firestore";
 import { useToast } from "vue-toastification";
+import { useAuthStore } from '@/stores/useAuthStore';
 
 export default {
   name: "FavoritesProduct",
   setup() {
     const toast = useToast();
-    return { toast };
+    const authStore = useAuthStore();
+    return { toast, authStore };
   },
   data() {
     return {
@@ -67,8 +69,8 @@ export default {
   },
   computed: {
     user() {
-      console.log('[Favorites] Accediendo al usuario desde Vuex:', this.$store.state.user);
-      return this.$store.state.user;
+      console.log('[Favorites] Accediendo al usuario desde Pinia:', this.authStore.user);
+      return this.authStore.user;
     }
   },
   methods: {
@@ -179,7 +181,9 @@ export default {
     console.log("[Favorites] Componente creado - Iniciando carga de datos");
     try {
       // Asegurarse de que el usuario esté cargado
-      await this.$store.dispatch('fetchUser');
+      if (!this.authStore.user) {
+        await this.authStore.initialize();
+      }
       console.log("[Favorites] Usuario cargado:", this.user);
       await this.loadFavorites();
     } catch (error) {

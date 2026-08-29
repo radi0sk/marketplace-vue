@@ -1,8 +1,44 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { useRoute } from 'vue-router';
+import { db } from '@/services/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useToast } from 'vue-toastification';
 
 const route = useRoute();
+const authStore = useAuthStore();
+const toast = useToast();
+
 const orderId = route.query.orderId || 'Desconocido';
+const testimonialMessage = ref('');
+const submitting = ref(false);
+const submitted = ref(false);
+
+const submitTestimonial = async () => {
+  if (!testimonialMessage.value.trim() || submitting.value) return;
+
+  submitting.value = true;
+  try {
+    await addDoc(collection(db, 'testimonials'), {
+      author: authStore.user?.displayName || 'Cliente Satisfecho',
+      message: testimonialMessage.value,
+      orderId: orderId,
+      userId: authStore.user?.uid,
+      fecha: serverTimestamp(),
+      approved: true // Por ahora los aprobamos automáticamente
+    });
+    
+    submitted.value = true;
+    toast.success('¡Gracias por tu comentario!');
+    testimonialMessage.value = '';
+  } catch (error) {
+    console.error('Error submitting testimonial:', error);
+    toast.error('No se pudo enviar el testimonio');
+  } finally {
+    submitting.value = false;
+  }
+};
 </script>
 
 <template>
@@ -25,6 +61,36 @@ const orderId = route.query.orderId || 'Desconocido';
     <div class="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm inline-block">
        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Número de Pedido</p>
        <h2 class="text-2xl font-bold text-primary-600 font-outfit">{{ orderId }}</h2>
+    </div>
+
+    <!-- Testimonial Section -->
+    <div v-if="!submitted" class="bg-slate-50 p-8 rounded-[40px] border border-slate-200 shadow-inner max-w-lg mx-auto space-y-4 transform transition-all hover:scale-[1.02]">
+      <div class="space-y-2">
+        <h3 class="text-xl font-bold text-slate-800">¿Cómo fue tu experiencia?</h3>
+        <p class="text-sm text-slate-500">Tu opinión nos ayuda a mejorar y a que otros confíen en nosotros.</p>
+      </div>
+      
+      <textarea 
+        v-model="testimonialMessage" 
+        class="w-full p-4 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all resize-none bg-white"
+        placeholder="Escribe aquí tu recomendación..."
+        rows="3"
+      ></textarea>
+      
+      <button 
+        @click="submitTestimonial" 
+        :disabled="!testimonialMessage.trim() || submitting"
+        class="w-full py-4 bg-primary-600 text-white rounded-2xl font-bold hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary-500/20 active:scale-95"
+      >
+        <font-awesome-icon v-if="submitting" icon="spinner" spin class="mr-2" />
+        {{ submitting ? 'Enviando...' : 'Enviar Testimonio' }}
+      </button>
+    </div>
+
+    <div v-else class="bg-primary-50 p-8 rounded-[40px] border border-primary-100 max-w-lg mx-auto animate-bounce-slow">
+       <font-awesome-icon icon="heart" class="text-primary-500 text-3xl mb-2" />
+       <h3 class="text-xl font-bold text-primary-800">¡Gracias por tu recomendación!</h3>
+       <p class="text-primary-600">Tu comentario aparecerá pronto en nuestra página de inicio.</p>
     </div>
 
     <!-- Actions -->

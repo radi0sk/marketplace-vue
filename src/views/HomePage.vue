@@ -16,7 +16,7 @@ const { products, loading: productsLoading } = useProducts();
 const { categories, loading: categoriesLoading } = useCategories();
 const { testimonials, loading: testimonialsLoading } = useTestimonials();
 
-useSEO('Inicio', 'Tu aliado experto en el campo. Compra maquinaria especial, nutrición y protección para tus cultivos en un solo lugar.');
+useSEO('Agro Guate | El Marketplace Agrícola Líder en Guatemala', 'Tu aliado experto en el campo. Compra maquinaria especial, nutrición y protección para tus cultivos en un solo lugar.');
 
 // State
 const userFavorites = ref<string[]>([]);
@@ -113,6 +113,9 @@ const goToBrandSearch = (brandName: string) => {
 
 <template>
   <div class="space-y-20 pb-20">
+    <!-- H1 Principal para SEO (Oculto visualmente pero legible para Google) -->
+    <h1 class="sr-only">Agro Guate | El Marketplace Agrícola Líder en Guatemala</h1>
+
     <!-- Hero Section with Carousel -->
     <section class="relative h-[650px] flex items-center justify-center overflow-hidden rounded-[40px] shadow-2xl mx-4">
       <TransitionGroup name="fade-hero">
@@ -120,7 +123,8 @@ const goToBrandSearch = (brandName: string) => {
              :key="'banner-' + index"
              v-show="currentBannerIdx === index"
              class="absolute inset-0 w-full h-full">
-          <img :src="banner.image" 
+          <img :src="banner.image.includes('cloudinary.com') ? banner.image.replace('/upload/', '/upload/f_auto,q_auto,w_1200/') : banner.image" 
+               :alt="banner.badge || 'Banner Agro Guate'"
                class="absolute inset-0 w-full h-full object-cover transform scale-105" />
           <div class="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-slate-900/50 to-transparent"></div>
           
@@ -129,8 +133,8 @@ const goToBrandSearch = (brandName: string) => {
               <span class="inline-block px-4 py-1.5 bg-primary-500/20 backdrop-blur-md border border-primary-500/30 rounded-full text-primary-300 text-xs font-bold uppercase tracking-widest animate-fade-in-down">
                 {{ banner.badge }}
               </span>
-              <h1 class="text-6xl md:text-7xl font-bold text-white font-outfit leading-tight whitespace-pre-line animate-fade-in-up" v-html="banner.title">
-              </h1>
+              <h2 class="text-6xl md:text-7xl font-bold text-white font-outfit leading-tight whitespace-pre-line animate-fade-in-up" v-html="banner.title">
+              </h2>
               <p class="text-lg text-slate-200 font-medium max-w-lg leading-relaxed animate-fade-in-up delay-100">
                 {{ banner.subtitle }}
               </p>
@@ -176,7 +180,7 @@ const goToBrandSearch = (brandName: string) => {
              @click="goToSearch(category.id)"
              class="group cursor-pointer">
           <div class="aspect-square rounded-full overflow-hidden mb-4 border-4 border-white shadow-lg group-hover:shadow-2xl transition-all duration-500 group-hover:-translate-y-2">
-            <img :src="category.image" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+            <img :src="category.image" :alt="'Categoría ' + category.name" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
           </div>
           <h3 class="text-center font-bold text-slate-700 group-hover:text-primary-600 transition-colors uppercase text-xs tracking-widest">
             {{ category.name }}
@@ -248,7 +252,11 @@ const goToBrandSearch = (brandName: string) => {
            <div v-for="marca in marcasAliadas" :key="marca.name" 
                 @click="goToBrandSearch(marca.name)"
                 class="h-12 md:h-16 grayscale hover:grayscale-0 transition-all duration-500 hover:scale-110 cursor-pointer">
-              <img v-if="marca.logo" :src="marca.logo" :alt="marca.name" class="h-full w-auto object-contain" />
+              <img v-if="marca.logo" 
+                   :src="marca.logo.includes('cloudinary.com') ? marca.logo.replace('/upload/', '/upload/f_auto,q_auto,w_200/') : marca.logo" 
+                   :alt="'Marca ' + marca.name" 
+                   loading="lazy"
+                   class="h-full w-auto object-contain" />
               <span v-else class="text-lg font-black text-slate-300 italic uppercase">{{ marca.name }}</span>
            </div>
         </div>

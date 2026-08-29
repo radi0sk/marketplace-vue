@@ -17,4 +17,22 @@ export default defineConfig({
   server: {
     port: 8080,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('firebase')) {
+            return 'firebase-vendor';
+          }
+          if (id.includes('vue') || id.includes('pinia')) {
+            return 'vue-core';
+          }
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000
+  }
 })

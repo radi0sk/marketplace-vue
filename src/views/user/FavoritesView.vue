@@ -29,12 +29,16 @@ import Favorites from '@/components/user/Favorites.vue';
 
 import { db } from '@/services/firebase';
 import { collection, getDocs, limit, query, where } from 'firebase/firestore';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 export default {
   name: 'FavoritesView',
   components: {
     Favorites,
-   
+  },
+  setup() {
+    const authStore = useAuthStore();
+    return { authStore };
   },
   data() {
     return {
@@ -44,7 +48,7 @@ export default {
   },
   computed: {
     favorites() {
-      return this.$store.state.favorites || [];
+      return this.authStore.user?.favorites || [];
     }
   },
   async created() {

@@ -48,28 +48,6 @@ const fetchPartnerData = async () => {
     const questionsSnap = await getDocs(qQ);
     pendingQuestions.value = questionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    // Stats...
-  } catch (error) {
-    // ...
-  }
-};
-
-const submitAnswer = async (questionId: string) => {
-  if (!answerText.value.trim()) return;
-  try {
-    await updateDoc(doc(db, "questions", questionId), {
-      answer: answerText.value,
-      answeredAt: new Date().toISOString()
-    });
-    toast.success("Respuesta enviada");
-    answeringId.value = null;
-    answerText.value = "";
-    fetchPartnerData();
-  } catch (e) {
-    toast.error("Error al enviar respuesta");
-  }
-};
-
     // Calculate stats (Mocked if no real data)
     stats.value.totalOrders = recentSales.value.length;
     stats.value.totalSales = recentSales.value.reduce((acc, curr) => acc + (curr.total || 0), 0);
@@ -86,6 +64,22 @@ const submitAnswer = async (questionId: string) => {
     toast.error("Error al cargar datos del panel");
   } finally {
     loading.value = false;
+  }
+};
+
+const submitAnswer = async (questionId: string) => {
+  if (!answerText.value.trim()) return;
+  try {
+    await updateDoc(doc(db, "questions", questionId), {
+      answer: answerText.value,
+      answeredAt: new Date().toISOString()
+    });
+    toast.success("Respuesta enviada");
+    answeringId.value = null;
+    answerText.value = "";
+    fetchPartnerData();
+  } catch (e) {
+    toast.error("Error al enviar respuesta");
   }
 };
 

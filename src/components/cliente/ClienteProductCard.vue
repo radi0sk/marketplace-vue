@@ -23,6 +23,10 @@
 </template>
 
 <script>
+import { useCartStore } from '@/stores/useCartStore';
+import { useToast } from 'vue-toastification';
+import { useTikTok } from '@/composables/useTikTok';
+
 export default {
   name: "ClienteProductCard",
   props: {
@@ -31,16 +35,20 @@ export default {
       required: true,
     },
   },
+  setup() {
+    const cartStore = useCartStore();
+    const toast = useToast();
+    const { trackAddToCart } = useTikTok();
+    return { cartStore, toast, trackAddToCart };
+  },
   methods: {
     calculatePrice(price, discount) {
       return (price * (1 - discount / 100)).toFixed(2);
     },
     addToCart() {
-      this.$store.dispatch('addToCart', { ...this.product, quantity: 1 });
-      this.$root.$emit('show-notification', {
-        message: `${this.product.name} añadido al carrito`,
-        type: 'success'
-      });
+      this.cartStore.addItem(this.product);
+      this.trackAddToCart(this.product);
+      this.toast.success(`${this.product.name} añadido al carrito`);
     }
   },
 };

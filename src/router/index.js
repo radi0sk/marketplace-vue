@@ -33,6 +33,12 @@ const UserManagement = () => import('@/views/admin/UserManagement.vue');
 const Settings = () => import('@/views/admin/Settings.vue');
 
 
+// Componentes de ventas y agronomía
+const CatalogExporterView = () => import('@/views/sales/CatalogExporterView.vue');
+const QuotesManagement = () => import('@/views/sales/QuotesManagement.vue');
+const CustomerCRM = () => import('@/views/sales/CustomerCRM.vue');
+const FieldVisitLog = () => import('@/views/sales/FieldVisitLog.vue');
+
 const routes = [
   // Rutas públicas
   {
@@ -47,6 +53,30 @@ const routes = [
     name: "Products",
     component: ProductsPage,
     meta: { title: "Productos" }
+  },
+  {
+    path: "/catalog",
+    name: "CatalogExporter",
+    component: CatalogExporterView,
+    meta: { title: "Catálogo WhatsApp" }
+  },
+  {
+    path: "/quotes",
+    name: "QuotesPublic",
+    component: QuotesManagement,
+    meta: { title: "Cotizaciones Rápidas" }
+  },
+  {
+    path: "/customers",
+    name: "CustomersPublic",
+    component: CustomerCRM,
+    meta: { title: "Directorio de Clientes" }
+  },
+  {
+    path: "/field-visits",
+    name: "FieldVisitsPublic",
+    component: FieldVisitLog,
+    meta: { title: "Bitácora de Visitas Técnicas" }
   },
   {
     path: "/product/:id",
@@ -121,6 +151,30 @@ const routes = [
     component: AdminDashboard,
     meta: { title: "Panel de Administración", requiresAuth: true, requiresPartner: true },
     children: [
+      {
+        path: "quotes",
+        name: "AdminQuotes",
+        component: QuotesManagement,
+        meta: { title: "Cotizaciones Rápidas" }
+      },
+      {
+        path: "customers",
+        name: "AdminCustomers",
+        component: CustomerCRM,
+        meta: { title: "Directorio & CRM Agrícola" }
+      },
+      {
+        path: "catalog",
+        name: "AdminCatalog",
+        component: CatalogExporterView,
+        meta: { title: "Catálogo WhatsApp" }
+      },
+      {
+        path: "field-visits",
+        name: "AdminFieldVisits",
+        component: FieldVisitLog,
+        meta: { title: "Bitácora de Campo" }
+      },
       {
         path: "products",
         name: "ProductManagement",

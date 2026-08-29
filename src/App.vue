@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import AppNavbar from "./components/Navbar.vue";
 import AppFooter from "./components/Footer.vue";
 import BottomNav from "./components/BottomNav.vue";
+import AgroAssistant from "./components/AgroAssistant.vue";
 
 const authStore = useAuthStore();
 
@@ -38,6 +39,7 @@ onMounted(() => {
     <div class="hidden md:block">
       <AppFooter />
     </div>
+    <AgroAssistant />
   </div>
 </template>
 

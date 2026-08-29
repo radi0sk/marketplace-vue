@@ -16,11 +16,13 @@ export const useAuthStore = defineStore('auth', {
         onAuthStateChanged(auth, async (firebaseUser) => {
           if (firebaseUser) {
             const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+            const userData = userDoc.data();
             this.user = {
               uid: firebaseUser.uid,
               email: firebaseUser.email,
-              displayName: firebaseUser.displayName || userDoc.data()?.name || 'Usuario',
-              role: userDoc.data()?.role || 'cliente',
+              displayName: firebaseUser.displayName || userData?.name || 'Usuario',
+              role: userData?.role || 'cliente',
+              photoURL: firebaseUser.photoURL || userData?.photoURL || null,
             };
           } else {
             this.user = null;

@@ -37,8 +37,18 @@
 </template>
 
 <script>
+import { useCartStore } from '@/stores/useCartStore';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useToast } from 'vue-toastification';
+
 export default {
   name: "ClienteCheckoutForm",
+  setup() {
+    const cartStore = useCartStore();
+    const authStore = useAuthStore();
+    const toast = useToast();
+    return { cartStore, authStore, toast };
+  },
   data() {
     return {
       address: "",
@@ -48,7 +58,7 @@ export default {
   },
   computed: {
     cartItems() {
-      return this.$store.state.cart;
+      return this.cartStore.items;
     },
     total() {
       return this.cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -59,27 +69,26 @@ export default {
       this.isSubmitting = true;
       try {
         const order = {
-          address: this.address,
-          paymentMethod: this.paymentMethod,
-          items: this.cartItems,
+          cliente: {
+            uid: this.authStore.user?.uid,
+            name: this.authStore.user?.displayName,
+            email: this.authStore.user?.email,
+          },
+          direccion: {
+            direccion: this.address,
+          },
+          metodoPago: this.paymentMethod,
+          subtotal: this.total,
+          envio: 0,
+          recargo: 0,
           total: this.total,
-          status: 'pending',
-          createdAt: new Date().toISOString()
         };
-
-        await this.$store.dispatch("submitOrder", order);
         
-        this.$root.$emit('show-notification', {
-          message: 'Pedido realizado con éxito',
-          type: 'success'
-        });
-        
+        await this.cartStore.submitOrder(order);
+        this.toast.success('Pedido realizado con éxito');
         this.$router.push("/order-summary");
       } catch (error) {
-        this.$root.$emit('show-notification', {
-          message: 'Error al procesar el pedido: ' + error.message,
-          type: 'error'
-        });
+        this.toast.error('Error al procesar el pedido: ' + error.message);
         console.error("Order error:", error);
       } finally {
         this.isSubmitting = false;

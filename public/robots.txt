@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
 
+Sitemap: https://agroguate.shop/sitemap.xml
+
 Sitemap: https://celularesatitlan.web.app/sitemap.xml

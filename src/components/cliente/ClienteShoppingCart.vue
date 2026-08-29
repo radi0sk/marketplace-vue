@@ -65,11 +65,19 @@
 </template>
 
 <script>
+import { useCartStore } from '@/stores/useCartStore';
+import { useToast } from 'vue-toastification';
+
 export default {
   name: "ClienteShoppingCart",
+  setup() {
+    const cartStore = useCartStore();
+    const toast = useToast();
+    return { cartStore, toast };
+  },
   computed: {
     cartItems() {
-      return this.$store.state.cart;
+      return this.cartStore.items;
     },
     subtotal() {
       return this.cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -86,23 +94,13 @@ export default {
     updateQuantity(item, change) {
       const newQuantity = item.quantity + change;
       if (newQuantity > 0) {
-        this.$store.dispatch('updateCartItem', {
-          id: item.id,
-          quantity: newQuantity
-        });
-        
-        this.$root.$emit('show-notification', {
-          message: `Cantidad de ${item.name} actualizada`,
-          type: 'success'
-        });
+        this.cartStore.updateQuantity(item.id, newQuantity);
+        this.toast.success(`Cantidad de ${item.name} actualizada`);
       }
     },
     removeItem(productId) {
-      this.$store.dispatch('removeFromCart', productId);
-      this.$root.$emit('show-notification', {
-        message: 'Producto eliminado del carrito',
-        type: 'success'
-      });
+      this.cartStore.removeItem(productId);
+      this.toast.success('Producto eliminado del carrito');
     }
   }
 };

@@ -1,9 +1,12 @@
 import { defineStore } from 'pinia';
 import type { Product, CartItem } from '@/types';
+import { db } from '@/services/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 export const useCartStore = defineStore('cart', {
   state: () => ({
     items: [] as CartItem[],
+    lastOrder: null as any,
   }),
   actions: {
     addItem(product: Product) {
@@ -25,6 +28,23 @@ export const useCartStore = defineStore('cart', {
     },
     clearCart() {
       this.items = [];
+    },
+    async submitOrder(orderData: any) {
+      try {
+        const order = {
+          ...orderData,
+          items: [...this.items],
+          fecha: serverTimestamp(),
+          estado: 'pendiente'
+        };
+        const docRef = await addDoc(collection(db, 'ordenes'), order);
+        this.lastOrder = { id: docRef.id, ...order };
+        this.clearCart();
+        return docRef.id;
+      } catch (error) {
+        console.error('Error submitting order:', error);
+        throw error;
+      }
     }
   },
   getters: {

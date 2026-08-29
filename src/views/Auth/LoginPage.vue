@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { auth, googleProvider, db } from "@/services/firebase";
-import { signInWithPopup } from "firebase/auth";
+import { signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useToast } from "vue-toastification";
 
@@ -10,31 +10,54 @@ const router = useRouter();
 const toast = useToast();
 const isLoading = ref(false);
 
+const handleUserDoc = async (user: any) => {
+  const userDoc = await getDoc(doc(db, "users", user.uid));
+  if (!userDoc.exists()) {
+    await setDoc(doc(db, "users", user.uid), {
+      name: user.displayName,
+      email: user.email,
+      photoURL: user.photoURL,
+      role: "cliente",
+      favorites: [],
+      purchaseHistory: [],
+      visitCount: 0,
+      createdAt: new Date().toISOString()
+    });
+  }
+};
+
+onMounted(async () => {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result && result.user) {
+      isLoading.value = true;
+      await handleUserDoc(result.user);
+      toast.success(`¡Bienvenido de nuevo, ${result.user.displayName}!`);
+      router.push("/");
+    }
+  } catch (error: any) {
+    console.error("Redirect result error:", error);
+  } finally {
+    isLoading.value = false;
+  }
+});
+
 const loginWithGoogle = async () => {
   isLoading.value = true;
   try {
     const result = await signInWithPopup(auth, googleProvider);
-    const user = result.user;
+    await handleUserDoc(result.user);
 
-    const userDoc = await getDoc(doc(db, "users", user.uid));
-    if (!userDoc.exists()) {
-      await setDoc(doc(db, "users", user.uid), {
-        name: user.displayName,
-        email: user.email,
-        photoURL: user.photoURL,
-        role: "cliente",
-        favorites: [],
-        purchaseHistory: [],
-        visitCount: 0,
-        createdAt: new Date().toISOString()
-      });
-    }
-
-    toast.success(`¡Bienvenido de nuevo, ${user.displayName}!`);
+    toast.success(`¡Bienvenido de nuevo, ${result.user.displayName}!`);
     router.push("/");
   } catch (error: any) {
-    toast.error("Error al iniciar sesión: " + error.message);
     console.error("Login error:", error);
+    if (error.code === 'auth/popup-blocked' || error.message?.includes('popup-blocked')) {
+      toast.info("Ventana emergente bloqueada. Redirigiendo para iniciar sesión...");
+      await signInWithRedirect(auth, googleProvider);
+    } else {
+      toast.error("Error al iniciar sesión: " + (error.message || error));
+    }
   } finally {
     isLoading.value = false;
   }

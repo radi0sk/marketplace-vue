@@ -6,6 +6,7 @@ import { db } from '@/services/firebase';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import type { Product } from '@/types';
 import { useToast } from 'vue-toastification';
+import { useTikTok } from '@/composables/useTikTok';
 
 const props = defineProps<{
   product: Product;
@@ -17,9 +18,11 @@ const emit = defineEmits(['toggle-favorite']);
 const cartStore = useCartStore();
 const authStore = useAuthStore();
 const toast = useToast();
+const { trackAddToCart, trackAddToWishlist } = useTikTok();
 
 const addToCart = () => {
   cartStore.addItem(props.product);
+  trackAddToCart(props.product);
   toast.success(`"${props.product.name}" agregado al carrito`);
 };
 
@@ -36,6 +39,7 @@ const toggleFavorite = async () => {
       toast.success("Eliminado de favoritos");
     } else {
       await updateDoc(userRef, { favorites: arrayUnion(props.product.id) });
+      trackAddToWishlist(props.product);
       toast.success("Agregado a favoritos");
     }
     emit('toggle-favorite', props.product.id);
@@ -56,8 +60,9 @@ const shareOnWhatsApp = () => {
     <!-- Image -->
     <div class="relative aspect-[4/3] overflow-hidden rounded-t-2xl">
       <img 
-        :src="product.images?.[0] || '/placeholder.png'" 
+        :src="product.images?.[0]?.includes('cloudinary.com') ? product.images[0].replace('/upload/', '/upload/f_auto,q_auto,w_400/') : (product.images?.[0] || '/placeholder.png')" 
         :alt="product.name"
+        loading="lazy"
         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
       />
       <!-- Badges -->

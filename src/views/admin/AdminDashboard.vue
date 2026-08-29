@@ -9,7 +9,7 @@
         <!-- Logo Section -->
         <div class="p-8 flex items-center gap-3">
           <div class="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg shadow-primary-200">
-            <i class="fas fa-rocket"></i>
+            <font-awesome-icon icon="rocket" />
           </div>
           <div>
             <h2 class="text-xl font-bold text-slate-800 leading-tight">Admin</h2>
@@ -27,7 +27,7 @@
             active-class="active-nav-link"
           >
             <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-100 group-hover:bg-primary-50 transition-colors nav-icon-bg">
-              <i :class="[link.icon, 'transition-colors']"></i>
+              <font-awesome-icon :icon="link.icon" class="transition-colors" />
             </div>
             {{ link.text }}
           </router-link>
@@ -43,8 +43,8 @@
               <p class="text-sm font-bold text-slate-800 truncate">Administrador</p>
               <p class="text-xs text-slate-500 truncate">admin@celularesatitlan.com</p>
             </div>
-            <button class="text-slate-400 hover:text-rose-500 transition-colors">
-              <i class="fas fa-sign-out-alt"></i>
+            <button @click="authStore.logout()" class="text-slate-400 hover:text-rose-500 transition-colors">
+              <font-awesome-icon icon="sign-out-alt" />
             </button>
           </div>
         </div>
@@ -57,19 +57,19 @@
       <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-3 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div class="lg:hidden w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center text-white text-sm shadow-md">
-            <i class="fas fa-rocket"></i>
+            <font-awesome-icon icon="rocket" />
           </div>
           <span class="text-sm font-black text-slate-800 uppercase tracking-widest">{{ $route.meta.title || 'Panel' }}</span>
         </div>
 
         <div class="flex items-center gap-4 ml-auto">
           <div class="hidden sm:flex items-center bg-slate-100 px-4 py-2 rounded-xl text-slate-500 text-sm gap-2">
-            <i class="far fa-calendar"></i>
+            <font-awesome-icon icon="calendar-alt" />
             <span>{{ currentDate }}</span>
           </div>
           
           <button class="relative p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors">
-            <i class="far fa-bell text-xl"></i>
+            <font-awesome-icon icon="bell" class="text-xl" />
             <span class="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
           </button>
         </div>
@@ -114,20 +114,62 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useToast } from 'vue-toastification';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { db } from '@/services/firebase';
+import { collection, query, orderBy, onSnapshot, limit } from 'firebase/firestore';
 
 const isSidebarOpen = ref(false);
+const toast = useToast();
+const authStore = useAuthStore();
 
 const adminLinks = [
+  { path: '/admin/quotes', text: 'Cotizaciones', icon: 'file-invoice-dollar' },
+  { path: '/admin/customers', text: 'Clientes CRM', icon: 'users' },
+  { path: '/admin/catalog', text: 'Catálogo WA', icon: 'share-alt' },
+  { path: '/admin/field-visits', text: 'Visitas Campo', icon: 'clipboard-list' },
   { path: '/admin/products', text: 'Stock', icon: 'boxes' },
   { path: '/admin/orders', text: 'Pedidos', icon: 'shopping-bag' },
-  { path: '/admin/users', text: 'Usuarios', icon: 'users-cog' },
   { path: '/admin/sales-statistics', text: 'Stats', icon: 'chart-pie' },
+  { path: '/admin/users', text: 'Usuarios', icon: 'users-cog' },
   { path: '/admin/settings', text: 'Ajustes', icon: 'cog' }
 ];
 
 const currentDate = computed(() => {
   return new Intl.DateTimeFormat('es-GT', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+});
+
+// Real-time Order Notifications
+let unsubscribeOrders: (() => void) | null = null;
+const isInitialLoad = ref(true);
+
+onMounted(() => {
+  const ordersRef = collection(db, 'ordenes');
+  const q = query(ordersRef, orderBy('fecha', 'desc'), limit(1));
+
+  unsubscribeOrders = onSnapshot(q, (snapshot) => {
+    if (isInitialLoad.value) {
+      isInitialLoad.value = false;
+      return;
+    }
+
+    snapshot.docChanges().forEach((change) => {
+      if (change.type === 'added') {
+        const order = change.doc.data();
+        toast.info(`🔔 ¡Nuevo Pedido! de ${order.cliente?.name || 'un cliente'} por Q${order.total?.toLocaleString()}`, {
+          timeout: 5000,
+          onClick: () => {
+             // Optional: navigate to order detail
+          }
+        });
+      }
+    });
+  });
+});
+
+onUnmounted(() => {
+  if (unsubscribeOrders) unsubscribeOrders();
 });
 </script>
 

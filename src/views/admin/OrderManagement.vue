@@ -73,14 +73,16 @@ export default {
   },
   computed: {
     user() {
-      console.log('[OrderManagement] Accediendo al usuario desde Vuex:', this.$store.state.user);
-      return this.$store.state.user;
+      console.log('[OrderManagement] Accediendo al usuario desde Pinia:', this.authStore.user);
+      return this.authStore.user;
     }
   },
   async created() {
     console.log('[OrderManagement] Componente creado - Iniciando carga de datos');
     try {
-      await this.$store.dispatch('fetchUser');
+      if (!this.authStore.user) {
+        await this.authStore.initialize();
+      }
       console.log('[OrderManagement] Usuario cargado:', this.user);
       await this.loadOrders();
     } catch (error) {

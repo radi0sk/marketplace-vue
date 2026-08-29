@@ -12,14 +12,31 @@
         <p class="text-slate-500 mt-2">Administra tus productos, precios y disponibilidad en tiempo real.</p>
       </div>
       
-      <button 
-        @click="goToAddProduct" 
-        class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-primary-200 transition-all flex items-center justify-center gap-2 group"
-      >
-        <i class="fas fa-plus group-hover:rotate-90 transition-transform"></i>
-        Agregar Nuevo Producto
-      </button>
+      <div class="flex flex-wrap items-center gap-3">
+        <button 
+          @click="isExcelModalOpen = true" 
+          class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl font-bold shadow-lg shadow-emerald-200 transition-all flex items-center justify-center gap-2"
+        >
+          <i class="fas fa-file-excel text-lg"></i>
+          Carga Masiva Excel
+        </button>
+
+        <button 
+          @click="goToAddProduct" 
+          class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-primary-200 transition-all flex items-center justify-center gap-2 group"
+        >
+          <i class="fas fa-plus group-hover:rotate-90 transition-transform"></i>
+          Agregar Nuevo Producto
+        </button>
+      </div>
     </div>
+
+    <!-- Excel Bulk Importer Modal -->
+    <ExcelCatalogImporter 
+      :isOpen="isExcelModalOpen" 
+      @close="isExcelModalOpen = false" 
+      @imported="updateStats" 
+    />
 
     <!-- Dashboard Quick Stats (Premium Addition) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -47,12 +64,14 @@ import { useRouter } from 'vue-router';
 import { getFirestore, collection, getDocs, query, where } from 'firebase/firestore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import ProductList from '@/components/admin/ProductList.vue';
+import ExcelCatalogImporter from '@/components/catalog/ExcelCatalogImporter.vue';
 
 const authStore = useAuthStore();
 
 const router = useRouter();
 const db = getFirestore();
 
+const isExcelModalOpen = ref(false);
 const totalProducts = ref(0);
 const outOfStockCount = ref(0);
 const availableCount = ref(0);

@@ -12,6 +12,7 @@
 import { auth, googleProvider, db } from "@/services/firebase";
 import { signInWithPopup } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
+import { useTikTok } from "@/composables/useTikTok";
 
 export default {
   name: "LoginForm",
@@ -19,6 +20,10 @@ export default {
     return {
       isLoading: false
     };
+  },
+  setup() {
+    const { trackCompleteRegistration } = useTikTok();
+    return { trackCompleteRegistration };
   },
   methods: {
     async loginWithGoogle() {
@@ -39,6 +44,7 @@ export default {
             purchaseHistory: [],
             visitCount: 0,
           });
+          this.trackCompleteRegistration();
         }
 
         this.$root.$emit('show-notification', {

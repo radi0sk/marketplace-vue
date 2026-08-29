@@ -122,6 +122,7 @@
 <script>
 import { getOrderById, updateOrderStatus } from '@/api/orders';
 import { useToast } from "vue-toastification";
+import { useAuthStore } from '@/stores/useAuthStore';
 
 export default {
   props: {
@@ -132,7 +133,8 @@ export default {
   },
   setup() {
     const toast = useToast();
-    return { toast };
+    const authStore = useAuthStore();
+    return { toast, authStore };
   },
   data() {
     return {
@@ -144,14 +146,16 @@ export default {
   },
   computed: {
     user() {
-      console.log('[OrderDetail] Accediendo al usuario desde Vuex:', this.$store.state.user);
-      return this.$store.state.user;
+      console.log('[OrderDetail] Accediendo al usuario desde Pinia:', this.authStore.user);
+      return this.authStore.user;
     }
   },
   async created() {
     console.log('[OrderDetail] Componente creado - Iniciando carga de datos');
     try {
-      await this.$store.dispatch('fetchUser');
+      if (!this.authStore.user) {
+        await this.authStore.initialize();
+      }
       console.log('[OrderDetail] Usuario cargado:', this.user);
       await this.loadOrder();
     } catch (error) {

@@ -298,4 +298,3 @@ const toggleAvailability = async (product: Product) => {
   animation: fade-in 0.6s ease-out forwards;
 }
 </style>
-style>

@@ -6,10 +6,13 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useToast } from "vue-toastification";
 import { uploadImageToCloudinary } from "@/services/cloudinary";
 
+import PartnerRegistrationModal from '@/components/user/PartnerRegistrationModal.vue';
+
 const toast = useToast();
 const authStore = useAuthStore();
 const loading = ref(true);
 const isEditing = ref(false);
+const showPartnerModal = ref(false);
 const activeTab = ref('personal'); // 'personal', 'bank', 'shipping'
 
 const userData = ref<any>({
@@ -91,6 +94,15 @@ const saveProfile = async () => {
       ...userData.value,
       photoURL
     });
+
+    // Update store state for immediate UI feedback
+    if (authStore.user) {
+      authStore.user = {
+        ...authStore.user,
+        displayName: userData.value.name,
+        photoURL: photoURL
+      };
+    }
     
     toast.success("Perfil actualizado con éxito");
     isEditing.value = false;
@@ -108,9 +120,26 @@ const isPartner = computed(() => userData.value.role === 'admin' || userData.val
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 pb-20">
+  <div class="min-h-screen bg-slate-50 pb-20 font-outfit">
     <div class="max-w-5xl mx-auto px-4 pt-10">
       
+      <!-- Partner Banner Callout (If NOT partner) -->
+      <div v-if="!isPartner" class="bg-gradient-to-r from-amber-500 via-emerald-600 to-teal-700 rounded-[2.5rem] p-6 md:p-8 text-white shadow-2xl mb-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+        <div class="space-y-2 text-center md:text-left relative z-10">
+          <span class="bg-white/20 backdrop-blur-md text-amber-100 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full">
+            <i class="fas fa-seedling mr-1"></i> Programa de Socios Agro Guate
+          </span>
+          <h3 class="text-2xl font-black">¿Eres Asesor Agrónomo, Mayorista o Proveedor?</h3>
+          <p class="text-xs text-amber-100 font-medium max-w-xl">Date de alta como Socio para publicar tu catálogo de insumos, cotizar directamente por WhatsApp y cargar productos masivamente con Excel.</p>
+        </div>
+        <button 
+          @click="showPartnerModal = true" 
+          class="px-6 py-3.5 bg-slate-950 text-amber-400 hover:bg-slate-900 font-black text-xs uppercase tracking-wider rounded-2xl shadow-2xl transition-all whitespace-nowrap active:scale-95 relative z-10 flex items-center gap-2"
+        >
+          <i class="fas fa-certificate text-amber-400"></i> Darse de alta como Socio
+        </button>
+      </div>
+
       <!-- Profile Header -->
       <div class="bg-white rounded-[3rem] p-8 md:p-12 shadow-sm border border-slate-100 mb-8 overflow-hidden relative">
         <div class="absolute top-0 right-0 w-64 h-64 bg-primary-50 rounded-full blur-3xl -mr-32 -mt-32 opacity-50"></div>
@@ -143,6 +172,10 @@ const isPartner = computed(() => userData.value.role === 'admin' || userData.val
                 {{ loading ? 'Guardando...' : 'Guardar Cambios' }}
               </button>
               
+              <button v-if="!isPartner" @click="showPartnerModal = true" class="px-6 py-2 bg-amber-500 text-slate-950 rounded-xl text-sm font-black shadow-lg hover:bg-amber-600 transition-all">
+                <i class="fas fa-user-plus mr-1"></i> Alta de Socio
+              </button>
+
               <router-link v-if="isPartner" to="/partner/dashboard" class="px-6 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold shadow-lg hover:bg-emerald-700 transition-all">
                 <i class="fas fa-chart-line mr-2"></i> Mi Panel de Socio
               </router-link>
@@ -242,6 +275,13 @@ const isPartner = computed(() => userData.value.role === 'admin' || userData.val
         </div>
       </div>
     </div>
+
+    <!-- Partner Onboarding Modal -->
+    <PartnerRegistrationModal 
+      :isOpen="showPartnerModal" 
+      @close="showPartnerModal = false" 
+      @saved="fetchProfile" 
+    />
   </div>
 </template>
 

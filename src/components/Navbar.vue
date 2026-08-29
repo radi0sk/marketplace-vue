@@ -7,12 +7,14 @@ import { db } from '@/services/firebase';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import type { Product } from '@/types';
 import { useToast } from 'vue-toastification';
+import { useTikTok } from '@/composables/useTikTok';
 
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
 const cartStore = useCartStore();
 const toast = useToast();
+const { trackSearch } = useTikTok();
 
 const searchQuery = ref('');
 const searchResults = ref<Product[]>([]);
@@ -69,6 +71,7 @@ watch(searchQuery, () => {
 
 const performSearch = () => {
   if (searchQuery.value.trim()) {
+    trackSearch(searchQuery.value.trim());
     router.push({ path: '/products', query: { search: searchQuery.value.trim() } });
     showResults.value = false;
     searchQuery.value = '';

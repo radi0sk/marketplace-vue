@@ -38,11 +38,17 @@
 </template>
 
 <script>
+import { useCartStore } from '@/stores/useCartStore';
+
 export default {
   name: "ClienteOrderSummary",
+  setup() {
+    const cartStore = useCartStore();
+    return { cartStore };
+  },
   computed: {
     order() {
-      return this.$store.state.lastOrder || {
+      return this.cartStore.lastOrder || {
         id: 'N/A',
         items: [],
         address: 'No disponible',

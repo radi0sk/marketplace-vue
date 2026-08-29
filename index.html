@@ -5,25 +5,75 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
     <title>Agro Guate | El Marketplace Agrícola Líder en Guatemala</title>
-    <meta name="description" content="Agro Guate es tu mercado premium de confianza para maquinaria, insumos agrícolas, nutrición animal y tecnología para el campo. ¡Calidad garantizada al mejor precio!" />
+    <meta name="description" content="Agro Guate es tu mercado premium de confianza en Guatemala para maquinaria, insumos agrícolas, nutrición animal y tecnología para el campo. ¡Calidad garantizada!" />
     <meta name="keywords" content="agro guate, agricultura guatemala, insumos agrícolas, maquinaria pesada, fertilizantes, veterinaria, agroquímicos guatemala" />
     
     <!-- Open Graph / Social Media -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Agro Guate | Premium Marketplace Agrícola" />
-    <meta property="og:description" content="Tu aliado experto en el campo. Compra maquinaria especial, nutrición y protección para tus cultivos en un solo lugar." />
-    <meta property="og:image" content="https://celularesatitlan.web.app/og-image.jpg" />
-    <meta property="og:url" content="https://celularesatitlan.web.app" />
+    <meta property="og:title" content="Agro Guate | El Marketplace Agrícola Líder en Guatemala" />
+    <meta property="og:description" content="Tu aliado experto en el campo. Compra maquinaria especial, nutrición y protección para tus cultivos en un solo lugar. ¡Calidad garantizada!" />
+    <meta property="og:image" content="https://agroguate.shop/favicon.png" />
+    <meta property="og:url" content="https://agroguate.shop/" />
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Agro Guate | El Marketplace Agrícola Líder en Guatemala">
+    <meta name="twitter:description" content="Tu aliado experto en el campo. Compra maquinaria especial, nutrición y protección para tus cultivos en un solo lugar.">
+    <meta name="twitter:image" content="https://agroguate.shop/favicon.png">
 
     <meta name="robots" content="index, follow" />
     <meta name="googlebot" content="index, follow" />
     
-    <!-- Google Fonts for Premium look -->
+    <!-- 1. Preconnect as early as possible -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://res.cloudinary.com">
+    <link rel="preconnect" href="https://generativelanguage.googleapis.com">
+
+    <!-- 2. Preload critical fonts -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome for standard icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 3. Non-blocking CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+
+    <!-- 4. Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Agro Guate",
+      "url": "https://agroguate.shop",
+      "logo": "https://agroguate.shop/favicon.png",
+      "description": "El marketplace agrícola líder en Guatemala, especializado en maquinaria, insumos y tecnología para el campo.",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Guatemala City",
+        "addressCountry": "GT"
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer service",
+        "areaServed": "GT",
+        "availableLanguage": "Spanish"
+      }
+    }
+    </script>
+
+    <!-- TikTok Pixel Code Start -->
+    <script>
+    !function (w, d, t) {
+      w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(
+    var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=document.createElement("script")
+    ;n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
+
+
+      ttq.load('D7QB48JC77UEKRBRJFAG');
+      ttq.page();
+    }(window, document, 'ttq');
+    </script>
+    <!-- TikTok Pixel Code End -->
   </head>
   <body class="bg-slate-50 text-slate-900 font-sans">
     <div id="app"></div>

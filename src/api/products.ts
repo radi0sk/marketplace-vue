@@ -11,7 +11,7 @@ import {
   where,
   orderBy
 } from 'firebase/firestore';
-import type { Product, Category } from '@/types/product';
+import type { Product, Category } from '@/types';
 
 // Collection Names
 const PRODUCTS_COLLECTION = 'products';

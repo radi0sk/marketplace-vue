@@ -8,18 +8,24 @@ import { useSEO } from '@/composables/useSEO';
 import { useCartStore } from '@/stores/useCartStore';
 import { useToast } from "vue-toastification";
 import type { Product } from '@/types';
+import { useTikTok } from '@/composables/useTikTok';
 
 const route = useRoute();
 const toast = useToast();
 const authStore = useAuthStore();
 const cartStore = useCartStore();
 const { updateSEO } = useSEO('Cargando producto...');
+const { trackViewContent, trackAddToCart, trackAddToWishlist } = useTikTok();
 
 const product = ref<Product | null>(null);
 const loadingFavorite = ref(false);
 const questions = ref<any[]>([]);
 const newQuestion = ref("");
 const sendingQuestion = ref(false);
+const loading = ref(true);
+const mainImage = ref("");
+const isFavorite = ref(false);
+const quantity = ref(1);
 
 const fetchQuestions = async () => {
   try {
@@ -78,6 +84,9 @@ onMounted(async () => {
       product.value = { id: docSnap.id, ...docSnap.data() } as Product;
       mainImage.value = product.value.mainImage || product.value.images?.[0] || "";
       
+      // Track TikTok ViewContent
+      trackViewContent(product.value);
+      
       // Update SEO
       updateSEO(
         product.value.name, 
@@ -128,6 +137,7 @@ const toggleFavorite = async () => {
       toast.success("Eliminado de favoritos");
     } else {
       await updateDoc(userRef, { favorites: arrayUnion(productId) });
+      if (product.value) trackAddToWishlist(product.value);
       toast.success("Agregado a favoritos");
     }
     isFavorite.value = !isFavorite.value;
@@ -143,6 +153,7 @@ const handleAddToCart = () => {
     for (let i = 0; i < quantity.value; i++) {
       cartStore.addItem(product.value);
     }
+    trackAddToCart(product.value, quantity.value);
     toast.success(`${product.value.name} (${quantity.value}) agregado al carrito`);
   }
 };
@@ -160,7 +171,7 @@ const handleAddToCart = () => {
       <!-- Left: Gallery -->
       <div class="space-y-6">
         <div class="bg-white rounded-[40px] overflow-hidden shadow-xl border border-slate-100 aspect-square group">
-          <img :src="mainImage || '/placeholder.png'" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+          <img :src="mainImage || '/placeholder.png'" :alt="product.name" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
         </div>
         
         <div v-if="product.images?.length" class="flex gap-4 overflow-x-auto pb-4">
@@ -173,7 +184,7 @@ const handleAddToCart = () => {
               mainImage === img ? 'border-primary-500 shadow-lg' : 'border-slate-100 opacity-60 hover:opacity-100'
             ]"
           >
-            <img :src="img" class="w-full h-full object-cover" />
+            <img :src="img" :alt="product.name + ' vista ' + (i + 1)" class="w-full h-full object-cover" />
           </button>
         </div>
       </div>

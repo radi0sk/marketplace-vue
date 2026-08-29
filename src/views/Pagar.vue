@@ -6,11 +6,13 @@ import { useCartStore } from '@/stores/useCartStore';
 import { db } from '@/services/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useToast } from "vue-toastification";
+import { useTikTok } from '@/composables/useTikTok';
 
 const router = useRouter();
 const toast = useToast();
 const authStore = useAuthStore();
 const cartStore = useCartStore();
+const { trackInitiateCheckout, trackPurchase } = useTikTok();
 
 // State
 const isLoading = ref(false);
@@ -83,6 +85,10 @@ onMounted(async () => {
       }
     }
   }
+
+  if (cartStore.items.length > 0) {
+    trackInitiateCheckout(subtotal.value, cartStore.items);
+  }
 });
 
 // Actions
@@ -140,6 +146,7 @@ const finalizarCompra = async () => {
     };
 
     await setDoc(doc(db, 'ordenes', orderId), orden);
+    trackPurchase(orderId, totalFinal.value, cartStore.items);
     cartStore.clearCart();
     toast.success("¡Compra enviada con éxito!");
     router.push({ name: 'Confirmacion', query: { orderId } });

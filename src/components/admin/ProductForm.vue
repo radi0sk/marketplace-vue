@@ -13,7 +13,7 @@ import { db } from '@/services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { uploadImageToCloudinary } from '@/services/cloudinary';
 import { compressImage } from '@/utils/imageUtils';
-import type { Product, Category, Feature } from '@/types/product';
+import type { Product, Category, Feature } from '@/types';
 import { 
   LINEAS_PRODUCCION, 
   ESPECIES_CULTIVOS, 
@@ -351,7 +351,7 @@ const submitProduct = async () => {
                   v-model="product.name" 
                   type="text" 
                   required 
-                  placeholder="Ej. iPhone 15 Pro Max"
+                  placeholder="Ej. Tractor John Deere o Fertilizante Urea"
                   class="premium-input w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-primary-500/20 transition-all"
                 />
               </div>
@@ -589,8 +589,8 @@ const submitProduct = async () => {
               
               <div class="pt-4 space-y-3">
                 <div class="flex gap-2">
-                  <input v-model="newFeature.name" placeholder="RAM" class="w-1/2 px-3 py-2 bg-slate-50 border-none rounded-lg text-xs font-bold" />
-                  <input v-model="newFeature.value" placeholder="8GB" class="w-1/2 px-3 py-2 bg-slate-50 border-none rounded-lg text-xs font-bold" />
+                  <input v-model="newFeature.name" placeholder="Ej. Peso / Potencia" class="w-1/2 px-3 py-2 bg-slate-50 border-none rounded-lg text-xs font-bold" />
+                  <input v-model="newFeature.value" placeholder="Ej. 50 kg / 90 HP" class="w-1/2 px-3 py-2 bg-slate-50 border-none rounded-lg text-xs font-bold" />
                 </div>
                 <button @click="addFeature" type="button" class="w-full py-2 border-2 border-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-xl hover:border-amber-400 hover:text-amber-600 transition-all">
                   + Agregar Ficha

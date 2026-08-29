@@ -5,7 +5,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { getCategories } from '@/api/products';
 import { uploadImageToCloudinary } from '@/services/cloudinary';
 import { compressImage } from '@/utils/imageUtils';
-import type { Category } from '@/types/product';
+import type { Category } from '@/types';
 import { useToast } from 'vue-toastification';
 
 const toast = useToast();
