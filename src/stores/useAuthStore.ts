@@ -22,6 +22,7 @@ export const useAuthStore = defineStore('auth', {
               email: firebaseUser.email,
               displayName: firebaseUser.displayName || userData?.name || 'Usuario',
               role: userData?.role || 'cliente',
+              isPartner: userData?.role === 'admin' || userData?.role === 'mayorista' || !!userData?.isPartner,
               photoURL: firebaseUser.photoURL || userData?.photoURL || null,
             };
           } else {
@@ -41,5 +42,6 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     isAuthenticated: (state) => !!state.user,
     isAdmin: (state) => state.user?.role === 'admin',
+    isPartner: (state) => state.user?.role === 'admin' || state.user?.role === 'mayorista' || !!state.user?.isPartner,
   }
 });

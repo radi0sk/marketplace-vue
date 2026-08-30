@@ -59,6 +59,7 @@ export interface UserProject {
   email: string | null;
   displayName: string;
   role?: 'admin' | 'cliente' | 'asociado' | 'mayorista';
+  isPartner?: boolean;
   photoURL?: string;
   bankAccount?: {
     bankName: string;

@@ -14,9 +14,9 @@ const navItems = computed(() => [
   { name: 'Catálogo', icon: 'search', path: '/products' },
   { name: 'Carrito', icon: 'shopping-cart', path: '/cart', badge: cartStore.itemCount },
   { 
-    name: authStore.isAdmin ? 'Admin' : 'Perfil', 
-    icon: authStore.isAdmin ? 'th-large' : 'user', 
-    path: authStore.isAdmin ? '/admin' : (authStore.isAuthenticated ? '/profile' : '/login') 
+    name: authStore.isAdmin ? 'Admin' : (authStore.isPartner ? 'Socio' : 'Perfil'), 
+    icon: authStore.isAdmin ? 'th-large' : (authStore.isPartner ? 'chart-line' : 'user'), 
+    path: authStore.isAdmin ? '/admin' : (authStore.isPartner ? '/partner/dashboard' : (authStore.isAuthenticated ? '/profile' : '/login')) 
   }
 ]);
 

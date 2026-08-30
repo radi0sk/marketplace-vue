@@ -210,11 +210,18 @@ watch(() => route.path, () => {
               <router-link to="/purchase-history" class="dropdown-item">
                 <font-awesome-icon icon="calendar-alt" class="w-4 h-4" /> Mis Pedidos
               </router-link>
-              
+
+              <template v-if="authStore.isPartner">
+                <div class="my-2 border-t border-slate-50"></div>
+                <router-link to="/partner/dashboard" class="dropdown-item !text-emerald-600 !bg-emerald-50 font-bold">
+                  <font-awesome-icon icon="chart-line" class="w-4 h-4 text-emerald-600" /> Mi Panel de Socio
+                </router-link>
+              </template>
+
               <template v-if="authStore.isAdmin">
                 <div class="my-2 border-t border-slate-50"></div>
-                <router-link to="/admin" class="dropdown-item !text-primary-600 !bg-primary-50">
-                  <font-awesome-icon icon="th-large" class="w-4 h-4" /> Panel Admin
+                <router-link to="/admin" class="dropdown-item !text-primary-600 !bg-primary-50 font-bold">
+                  <font-awesome-icon icon="th-large" class="w-4 h-4 text-primary-600" /> Panel Admin
                 </router-link>
               </template>
 
