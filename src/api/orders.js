@@ -27,20 +27,18 @@ export const getOrders = async (status = null, vendorId = null) => {
     let querySnapshot = await getDocs(q);
     let docs = querySnapshot.docs;
 
-    // Fallback: Si no devolvió órdenes con el filtro de array-contains pero hay vendorId, consultar todas y filtrar localmente
+    // Fallback si la consulta array-contains devolvió 0 por ser orden previa
     if (vendorId && docs.length === 0) {
-      let fallbackQ = query(collection(db, 'ordenes'), orderBy('fecha', 'desc'));
-      if (status) {
-        fallbackQ = query(fallbackQ, where('estado', '==', status));
-      }
-      const fallbackSnap = await getDocs(fallbackQ);
-      docs = fallbackSnap.docs.filter(d => {
+      const allSnap = await getDocs(collection(db, 'ordenes'));
+      docs = allSnap.docs.filter(d => {
         const data = d.data();
         const vIds = data.vendorIds || [];
         const items = data.items || [];
-        return vIds.includes(vendorId) || 
+        const matchesVendor = vIds.includes(vendorId) || 
                data.vendorId === vendorId || 
-               items.some(item => item.vendorId === vendorId || item.affiliateVendorId === vendorId);
+               items.some((item) => item.vendorId === vendorId || item.affiliateVendorId === vendorId);
+        const matchesStatus = !status || data.estado === status;
+        return matchesVendor && matchesStatus;
       });
     }
 
@@ -65,9 +63,49 @@ export const getOrders = async (status = null, vendorId = null) => {
       };
     });
   } catch (error) {
-    if (error.code === 'failed-precondition') {
-      console.warn('Índice no encontrado, devolviendo array vacío');
-      return [];
+    if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+      console.warn('Índice no encontrado en Firestore, ejecutando filtrado en memoria...');
+      try {
+        const allSnap = await getDocs(collection(db, 'ordenes'));
+        let docs = allSnap.docs.filter(d => {
+          const data = d.data();
+          const vIds = data.vendorIds || [];
+          const items = data.items || [];
+          const matchesVendor = !vendorId || 
+                 vIds.includes(vendorId) || 
+                 data.vendorId === vendorId || 
+                 items.some((item) => item.vendorId === vendorId || item.affiliateVendorId === vendorId);
+          const matchesStatus = !status || data.estado === status;
+          return matchesVendor && matchesStatus;
+        });
+
+        // Ordenar por fecha descendente
+        docs.sort((a, b) => {
+          const fA = new Date(a.data().fecha || 0).getTime();
+          const fB = new Date(b.data().fecha || 0).getTime();
+          return fB - fA;
+        });
+
+        return docs.map(doc => {
+          const data = doc.data();
+          let fecha;
+          if (data.fecha?.toDate) {
+            fecha = data.fecha.toDate();
+          } else if (data.fecha) {
+            fecha = new Date(data.fecha);
+          } else {
+            fecha = new Date();
+          }
+          return {
+            id: doc.id,
+            ...data,
+            fecha: fecha
+          };
+        });
+      } catch (fallbackErr) {
+        console.error('Error en fallback de órdenes:', fallbackErr);
+        return [];
+      }
     }
     console.error('Error al obtener pedidos:', error);
     throw error;
