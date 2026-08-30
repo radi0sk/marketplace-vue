@@ -1,14 +1,19 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { auth, googleProvider, db } from "@/services/firebase";
 import { signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useToast } from "vue-toastification";
 
 const router = useRouter();
+const route = useRoute();
 const toast = useToast();
 const isLoading = ref(false);
+
+const getRedirectPath = () => {
+  return (route.query.redirect as string) || "/";
+};
 
 const handleUserDoc = async (user: any) => {
   const userDoc = await getDoc(doc(db, "users", user.uid));
@@ -33,7 +38,7 @@ onMounted(async () => {
       isLoading.value = true;
       await handleUserDoc(result.user);
       toast.success(`¡Bienvenido de nuevo, ${result.user.displayName}!`);
-      router.push("/");
+      router.push(getRedirectPath());
     }
   } catch (error: any) {
     console.error("Redirect result error:", error);
@@ -49,7 +54,7 @@ const loginWithGoogle = async () => {
     await handleUserDoc(result.user);
 
     toast.success(`¡Bienvenido de nuevo, ${result.user.displayName}!`);
-    router.push("/");
+    router.push(getRedirectPath());
   } catch (error: any) {
     console.error("Login error:", error);
     if (error.code === 'auth/popup-blocked' || error.message?.includes('popup-blocked')) {

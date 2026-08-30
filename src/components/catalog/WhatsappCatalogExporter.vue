@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { db } from '@/services/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import type { Product, Category } from '@/types';
 import { useToast } from 'vue-toastification';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 const toast = useToast();
+const authStore = useAuthStore();
 
 const products = ref<Product[]>([]);
 const categories = ref<Category[]>([]);
 const loading = ref(true);
 
+const catalogSource = ref<'partner' | 'global'>('partner');
 const exportMode = ref<'all' | 'category' | 'custom'>('category');
 const selectedCategory = ref<string>('');
 const selectedProductIds = ref<Set<string>>(new Set());
@@ -40,15 +43,43 @@ onMounted(async () => {
   }
 });
 
-// Products selected for the export based on exportMode
-const exportProducts = computed(() => {
-  if (exportMode.value === 'all') {
-    return products.value;
-  } else if (exportMode.value === 'category') {
-    if (!selectedCategory.value) return products.value;
-    return products.value.filter(p => p.categoria === selectedCategory.value);
+// Calculate products based on catalogSource (My Products vs Global Marketplace +10% Commission)
+const availableProducts = computed(() => {
+  const uid = authStore.user?.uid;
+  
+  if (catalogSource.value === 'partner') {
+    if (!uid) return products.value;
+    const myProducts = products.value.filter(p => p.vendorId === uid);
+    return myProducts.length > 0 ? myProducts : products.value;
   } else {
-    return products.value.filter(p => selectedProductIds.value.has(p.id));
+    // Global Catalog: add 10% commission to external products
+    return products.value.map(p => {
+      const isExternal = p.vendorId && p.vendorId !== uid;
+      if (isExternal) {
+        const commPrice = Math.ceil(p.price * 1.10);
+        const commCashPrice = p.cashPrice ? Math.ceil(p.cashPrice * 1.10) : undefined;
+        return {
+          ...p,
+          price: commPrice,
+          cashPrice: commCashPrice,
+          isCommissioned: true
+        };
+      }
+      return p;
+    });
+  }
+});
+
+// Products selected for export based on exportMode
+const exportProducts = computed(() => {
+  const baseList = availableProducts.value;
+  if (exportMode.value === 'all') {
+    return baseList;
+  } else if (exportMode.value === 'category') {
+    if (!selectedCategory.value) return baseList;
+    return baseList.filter(p => p.categoria === selectedCategory.value);
+  } else {
+    return baseList.filter(p => selectedProductIds.value.has(p.id));
   }
 });
 
@@ -61,7 +92,7 @@ const toggleSelectProduct = (id: string) => {
 };
 
 const selectAllCustom = () => {
-  products.value.forEach(p => selectedProductIds.value.add(p.id));
+  availableProducts.value.forEach(p => selectedProductIds.value.add(p.id));
 };
 
 const clearSelectionCustom = () => {
@@ -76,7 +107,7 @@ const formattedMessage = computed(() => {
 
   let text = `${customIntro.value}\n\n`;
 
-  exportProducts.value.forEach((p, index) => {
+  exportProducts.value.forEach((p: any, index) => {
     const isAvailable = p.stock > 0 || p.availability === 'in_stock';
     const statusTag = isAvailable ? '✅ Disponible' : '❌ Agotado';
     const priceStr = p.cashPrice ? `Q${p.cashPrice} (Efectivo) / Q${p.price} (Normal)` : `Q${p.price}`;
@@ -136,6 +167,52 @@ const getCategoryName = (catId: string) => {
     <div v-else class="grid grid-cols-1 lg:grid-cols-12 gap-8">
       <!-- Left Config Column -->
       <div class="lg:col-span-7 space-y-6">
+        <!-- Catalog Source Card -->
+        <div class="bg-white rounded-3xl p-6 shadow-xl border border-slate-100 space-y-4">
+          <h3 class="text-sm font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
+            <font-awesome-icon icon="store" class="text-emerald-600" /> Origen del Catálogo
+          </h3>
+
+          <div class="grid grid-cols-2 gap-3">
+            <button 
+              @click="catalogSource = 'partner'" 
+              :class="[
+                'p-4 rounded-2xl text-xs font-bold transition-all border text-left flex flex-col gap-1',
+                catalogSource === 'partner' 
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' 
+                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+              ]"
+            >
+              <div class="flex items-center gap-2">
+                <i class="fas fa-box-open text-base"></i>
+                <span class="font-black">Mi Negocio (Mis Productos)</span>
+              </div>
+              <span class="text-[10px] opacity-80">Catálogo directo de tus propios insumos y productos</span>
+            </button>
+
+            <button 
+              @click="catalogSource = 'global'" 
+              :class="[
+                'p-4 rounded-2xl text-xs font-bold transition-all border text-left flex flex-col gap-1',
+                catalogSource === 'global' 
+                  ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-md' 
+                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+              ]"
+            >
+              <div class="flex items-center gap-2">
+                <i class="fas fa-globe text-base text-amber-600"></i>
+                <span class="font-black">Catálogo Global (+10% Comisión)</span>
+              </div>
+              <span class="text-[10px] opacity-80">Ganas un 10% adicional por venta sobre insumos globales</span>
+            </button>
+          </div>
+
+          <div v-if="catalogSource === 'global'" class="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-amber-900 text-xs font-medium flex items-center gap-2">
+            <i class="fas fa-info-circle text-amber-600 text-sm"></i>
+            <span><strong>Catálogo Global activo:</strong> A los productos de otros vendedores se les suma automáticamente un 10% de comisión para ti.</span>
+          </div>
+        </div>
+
         <!-- Mode Selection Card -->
         <div class="bg-white rounded-3xl p-6 shadow-xl border border-slate-100 space-y-4">
           <h3 class="text-sm font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">

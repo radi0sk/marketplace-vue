@@ -24,25 +24,37 @@ export const getOrders = async (status = null, vendorId = null) => {
       q = query(q, where('vendorIds', 'array-contains', vendorId));
     }
     
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => {
+    let querySnapshot = await getDocs(q);
+    let docs = querySnapshot.docs;
+
+    // Fallback: Si no devolvió órdenes con el filtro de array-contains pero hay vendorId, consultar todas y filtrar localmente
+    if (vendorId && docs.length === 0) {
+      let fallbackQ = query(collection(db, 'ordenes'), orderBy('fecha', 'desc'));
+      if (status) {
+        fallbackQ = query(fallbackQ, where('estado', '==', status));
+      }
+      const fallbackSnap = await getDocs(fallbackQ);
+      docs = fallbackSnap.docs.filter(d => {
+        const data = d.data();
+        const vIds = data.vendorIds || [];
+        const items = data.items || [];
+        return vIds.includes(vendorId) || 
+               data.vendorId === vendorId || 
+               items.some(item => item.vendorId === vendorId || item.affiliateVendorId === vendorId);
+      });
+    }
+
+    return docs.map(doc => {
       const data = doc.data();
       let fecha;
       
-      // Caso 1: Es un Timestamp de Firestore
       if (data.fecha?.toDate) {
         fecha = data.fecha.toDate();
-      } 
-      // Caso 2: Es un string ISO
-      else if (typeof data.fecha === 'string') {
+      } else if (typeof data.fecha === 'string') {
         fecha = new Date(data.fecha);
-      }
-      // Caso 3: Es un número (timestamp)
-      else if (typeof data.fecha === 'number') {
+      } else if (typeof data.fecha === 'number') {
         fecha = new Date(data.fecha);
-      }
-      // Caso 4: No existe o es inválido
-      else {
+      } else {
         fecha = new Date();
       }
       

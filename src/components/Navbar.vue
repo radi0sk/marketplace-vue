@@ -186,7 +186,7 @@ watch(() => route.path, () => {
           
           <router-link 
             v-else 
-            to="/login"
+            :to="{ path: '/login', query: { redirect: $route.fullPath } }"
             class="btn-primary flex items-center gap-2 !px-5 !py-2 text-sm"
           >
             <span>Entrar</span>

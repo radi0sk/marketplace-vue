@@ -31,9 +31,14 @@ export const useCartStore = defineStore('cart', {
     },
     async submitOrder(orderData: any) {
       try {
+        const vendorIds = [...new Set(
+          this.items.flatMap(item => [item.vendorId, (item as any).affiliateVendorId]).filter(Boolean)
+        )];
+
         const order = {
           ...orderData,
           items: [...this.items],
+          vendorIds: vendorIds.length > 0 ? vendorIds : [orderData.cliente?.uid].filter(Boolean),
           fecha: serverTimestamp(),
           estado: 'pendiente'
         };

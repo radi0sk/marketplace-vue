@@ -282,9 +282,10 @@ router.beforeEach(async (to, from, next) => {
 
   // Lógica de redirección
   if (requiresGuest && currentUser) {
-    next('/');
+    const redirectUrl = to.query.redirect ? String(to.query.redirect) : '/';
+    next(redirectUrl);
   } else if (requiresAuth && !currentUser) {
-    next('/login');
+    next({ path: '/login', query: { redirect: to.fullPath } });
   } else if (requiresAdmin && userRole !== 'admin') {
     next('/');
   } else if (requiresPartner && !isPartner) {

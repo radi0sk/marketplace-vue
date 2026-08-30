@@ -137,7 +137,7 @@ const finalizarCompra = async () => {
       direccion: direccionEnvio.value,
       metodoPago: metodoPago.value,
       items: cartStore.items,
-      vendorIds: [...new Set(cartStore.items.map(item => item.vendorId).filter(id => !!id))],
+      vendorIds: [...new Set(cartStore.items.flatMap(item => [item.vendorId, (item as any).affiliateVendorId]).filter(id => !!id))],
       subtotal: subtotal.value,
       envio: gastosEnvio.value,
       recargo: recargo.value,
