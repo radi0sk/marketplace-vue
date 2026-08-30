@@ -112,7 +112,7 @@
           <option value="cancelado">Cancelado</option>
         </select>
         <button @click="printOrder" class="print-btn">
-          <i class="fas fa-print"></i> Imprimir
+          <i class="fas fa-receipt"></i> Imprimir Ticket POS
         </button>
       </div>
     </div>
@@ -123,6 +123,7 @@
 import { getOrderById, updateOrderStatus } from '@/api/orders';
 import { useToast } from "vue-toastification";
 import { useAuthStore } from '@/stores/useAuthStore';
+import { printThermalTicket } from '@/utils/thermalPrinter';
 
 export default {
   props: {
@@ -263,8 +264,8 @@ export default {
       return methods[method] || method;
     },
     printOrder() {
-      console.log('[OrderDetail] Imprimiendo orden');
-      window.print();
+      console.log('[OrderDetail] Imprimiendo ticket térmico POS para orden:', this.order?.id);
+      printThermalTicket(this.order);
     },
     formatDate(date) {
       const options = { 

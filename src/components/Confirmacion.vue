@@ -4,16 +4,27 @@ import { useRoute } from 'vue-router';
 import { db } from '@/services/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useCartStore } from '@/stores/useCartStore';
 import { useToast } from 'vue-toastification';
+import { printThermalTicket } from '@/utils/thermalPrinter';
 
 const route = useRoute();
 const authStore = useAuthStore();
+const cartStore = useCartStore();
 const toast = useToast();
 
-const orderId = route.query.orderId || 'Desconocido';
+const orderId = (route.query.orderId as string) || 'Desconocido';
 const testimonialMessage = ref('');
 const submitting = ref(false);
 const submitted = ref(false);
+
+const imprimirTicketConfirmado = () => {
+  if (cartStore.lastOrder) {
+    printThermalTicket(cartStore.lastOrder);
+  } else {
+    toast.info("Puedes ver e imprimir tu ticket en la sección Mis Pedidos.");
+  }
+};
 
 const submitTestimonial = async () => {
   if (!testimonialMessage.value.trim() || submitting.value) return;
@@ -95,10 +106,13 @@ const submitTestimonial = async () => {
 
     <!-- Actions -->
     <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
-       <router-link to="/purchase-history" class="btn-primary !px-10 !py-4 shadow-xl shadow-primary-500/20">
+       <button @click="imprimirTicketConfirmado" class="px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold text-sm shadow-xl shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 active:scale-95">
+          <i class="fas fa-receipt text-base"></i> Imprimir Ticket POS (80mm)
+       </button>
+       <router-link to="/purchase-history" class="btn-primary !px-8 !py-4 shadow-xl shadow-primary-500/20">
           Ver mi Historial
        </router-link>
-       <router-link to="/" class="px-10 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all active:scale-95">
+       <router-link to="/" class="px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all active:scale-95">
           Volver al Inicio
        </router-link>
     </div>

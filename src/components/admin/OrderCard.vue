@@ -65,6 +65,8 @@
 </template>
 
 <script>
+import { printThermalTicket } from '@/utils/thermalPrinter';
+
 export default {
   props: {
     order: {
@@ -96,7 +98,7 @@ export default {
       });
     },
     printCompact() {
-      window.print();
+      printThermalTicket(this.order);
     }
   }
 };

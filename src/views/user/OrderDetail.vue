@@ -126,6 +126,13 @@
           <i class="fas fa-file-invoice"></i> Ver comprobante
         </a>
       </div>
+
+      <!-- Botón de impresión de ticket -->
+      <div class="mt-8 pt-6 border-t border-slate-200 text-center">
+        <button @click="imprimirTicket" class="px-8 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 mx-auto">
+          <i class="fas fa-receipt"></i> Imprimir Ticket de Compra (80mm)
+        </button>
+      </div>
     </div>
     
     <div v-else class="no-order">
@@ -139,6 +146,7 @@ import { db, storage } from '@/services/firebase';
 import { doc, getDoc, getDocs, collection } from 'firebase/firestore';
 import { ref as storageRef, getDownloadURL } from 'firebase/storage';
 import { useToast } from "vue-toastification";
+import { printThermalTicket } from '@/utils/thermalPrinter';
 
 export default {
   name: 'OrderDetail',
@@ -264,6 +272,12 @@ export default {
         hour: '2-digit',
         minute: '2-digit'
       });
+    },
+
+    imprimirTicket() {
+      if (this.orden) {
+        printThermalTicket(this.orden);
+      }
     }
   }
 };
