@@ -213,8 +213,11 @@ watch(() => route.path, () => {
 
               <template v-if="authStore.isPartner">
                 <div class="my-2 border-t border-slate-50"></div>
-                <router-link to="/admin/products" class="dropdown-item !text-emerald-600 !bg-emerald-50 font-bold">
+                <router-link to="/partner/dashboard" class="dropdown-item !text-emerald-600 !bg-emerald-50 font-bold">
                   <font-awesome-icon icon="chart-line" class="w-4 h-4 text-emerald-600" /> Mi Panel de Socio
+                </router-link>
+                <router-link to="/admin/products" class="dropdown-item text-slate-700 hover:text-primary-600 font-medium">
+                  <font-awesome-icon icon="boxes" class="w-4 h-4 text-slate-500" /> Gestión de Productos
                 </router-link>
               </template>
 

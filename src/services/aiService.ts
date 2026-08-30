@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { db } from "./firebase";
 import { collection, getDocs, limit, query } from "firebase/firestore";
 
-const API_KEY = "AIzaSyCMyS9390mvyqD9wVckhST3BsMKrN1hHsw";
+const API_KEY = (import.meta.env.VITE_GEMINI_API_KEY as string) || "AIzaSyCMyS9390mvyqD9wVckhST3BsMKrN1hHsw";
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 const SYSTEM_PROMPT = `
@@ -28,60 +28,92 @@ Cuando recomiendes un producto, DEBES usar este formato exacto para que el usuar
 IMPORTANTE: Solo recomienda productos que estén en el catálogo que se te proporciona a continuación.
 `;
 
+const generateLocalAgroResponse = (userMessage: string, products: any[]) => {
+  const queryLower = userMessage.toLowerCase();
+  
+  // Buscar productos coincidentes en el catálogo local
+  const matchingProducts = products.filter(p => {
+    const text = `${p.name} ${p.categoria || ''} ${p.description || ''}`.toLowerCase();
+    const keywords = queryLower.split(' ').filter(k => k.length > 2);
+    return keywords.some(k => text.includes(k));
+  }).slice(0, 3);
+
+  if (matchingProducts.length > 0) {
+    let resp = `¡Hola! Como AgroAsesor de Agro Guate, analicé tu consulta ("${userMessage}") y te sugiero las siguientes opciones especializadas de nuestro catálogo:\n\n`;
+    matchingProducts.forEach(p => {
+      resp += `🌱 **${p.name}**\n- **Precio:** Q${p.price.toFixed(2)}\n`;
+      if (p.imageUrl) {
+        resp += `![${p.name}](${p.imageUrl})\n`;
+      }
+      resp += `[Ver detalles del producto](https://celularesatitlan.web.app/product/${p.id})\n\n`;
+    });
+    resp += `¿Necesitas asesoría en dosis por manzana o algún otro insumo agrícola? ¡Con gusto te ayudo!`;
+    return resp;
+  }
+
+  // Respuesta general agrícola si no hay coincidencia exacta de palabra clave
+  if (products.length > 0) {
+    const sample = products.slice(0, 2);
+    let resp = `¡Bienvenido al campo con Agro Guate! En respuesta a tu duda sobre "${userMessage}", aquí tienes algunos de nuestros productos destacados para el sector agrícola:\n\n`;
+    sample.forEach(p => {
+      resp += `📦 **${p.name}** - Q${p.price.toFixed(2)}\n`;
+      if (p.imageUrl) {
+        resp += `![${p.name}](${p.imageUrl})\n`;
+      }
+      resp += `[Ver detalles del producto](https://celularesatitlan.web.app/product/${p.id})\n\n`;
+    });
+    resp += `Si buscas insumos, fertilizantes o semillas específicas para tu cultivo o zona en Guatemala, dímelo y te orientaré.`;
+    return resp;
+  }
+
+  return `¡Hola! Soy AgroAsesor de Agro Guate. Cuéntame qué cultivo estás trabajando o qué producto agrícola buscas (fertilizantes, semillas, insecticidas, herramientas) y te daré la mejor recomendación para tu producción.`;
+};
+
 export const chatWithAgroAsesor = async (userMessage: string, chatHistory: any[] = []) => {
+  let productsList: any[] = [];
   try {
-    // 1. Obtener catálogo de productos para contexto (limitado para no saturar tokens)
     const productsSnap = await getDocs(query(collection(db, "products"), limit(40)));
-    const productCatalog = productsSnap.docs.map(doc => {
+    productsList = productsSnap.docs.map(doc => {
       const data = doc.data();
       const imageUrl = data.mainImage || (data.images && data.images[0]) || "";
-      return `- ${data.name}: Q${data.price} (ID: ${doc.id}, Imagen: ${imageUrl}, Categoría: ${data.categoria})`;
-    }).join("\n");
-
-    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
-
-    const chat = model.startChat({
-      history: [
-        {
-          role: "user",
-          parts: [{ text: SYSTEM_PROMPT + "\n\nCATÁLOGO DE PRODUCTOS ACTUAL:\n" + productCatalog }],
-        },
-        {
-          role: "model",
-          parts: [{ text: "Entendido. Soy AgroAsesor y estoy listo para ayudar a los productores guatemaltecos con el catálogo de Agro Guate." }],
-        },
-        ...chatHistory
-      ],
+      return {
+        id: doc.id,
+        name: data.name || "Producto Agrícola",
+        price: data.price || 0,
+        categoria: data.categoria || "",
+        imageUrl: imageUrl,
+        description: data.description || ""
+      };
     });
 
-    let attempts = 0;
-    const maxAttempts = 3;
+    const productCatalog = productsList.map(p => `- ${p.name}: Q${p.price} (ID: ${p.id}, Imagen: ${p.imageUrl}, Categoría: ${p.categoria})`).join("\n");
 
-    while (attempts < maxAttempts) {
-      try {
-        const result = await chat.sendMessage(userMessage);
-        const response = await result.response;
-        return response.text();
-      } catch (error: any) {
-        attempts++;
-        const isTransientError = error?.message?.includes('503') || error?.message?.includes('high demand');
-        
-        if (isTransientError && attempts < maxAttempts) {
-          console.warn(`AgroAsesor: Servidor de Google saturado (503). Reintentando ${attempts}/${maxAttempts}...`);
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          continue;
-        }
-        
-        console.error("Error en AgroAsesor:", error);
-        if (isTransientError) {
-          return "¡Ay caramba! Mis servidores están algo saturados por la alta demanda en este momento. Por favor, intenta enviarme el mensaje de nuevo en unos segundos, ¡aquí sigo para ayudarte!";
-        }
-        return "Lo siento, tuve un pequeño problema técnico. ¿Podrías repetirme tu duda? Soy un experto en el campo, ¡no me rindo fácil!";
-      }
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+      const chat = model.startChat({
+        history: [
+          {
+            role: "user",
+            parts: [{ text: SYSTEM_PROMPT + "\n\nCATÁLOGO DE PRODUCTOS ACTUAL:\n" + productCatalog }],
+          },
+          {
+            role: "model",
+            parts: [{ text: "Entendido. Soy AgroAsesor y estoy listo para ayudar a los productores guatemaltecos con el catálogo de Agro Guate." }],
+          },
+          ...chatHistory
+        ],
+      });
+
+      const result = await chat.sendMessage(userMessage);
+      const response = await result.response;
+      return response.text();
+    } catch (apiError: any) {
+      console.warn("AgroAsesor: Fallo en API Gemini (usando motor inteligente de catálogo local):", apiError?.message || apiError);
+      return generateLocalAgroResponse(userMessage, productsList);
     }
-    return "No pude conectar con el servicio de IA tras varios intentos. Por favor, intenta de nuevo en un momento.";
   } catch (error) {
     console.error("Error crítico en AgroAsesor:", error);
-    return "Lo siento, el sistema del AgroAsesor está experimentando dificultades técnicas. Por favor, intenta más tarde.";
+    return generateLocalAgroResponse(userMessage, productsList);
   }
 };

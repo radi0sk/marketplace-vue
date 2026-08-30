@@ -57,8 +57,14 @@ const loginWithGoogle = async () => {
     router.push(getRedirectPath());
   } catch (error: any) {
     console.error("Login error:", error);
-    if (error.code === 'auth/popup-blocked' || error.message?.includes('popup-blocked')) {
-      toast.info("Ventana emergente bloqueada. Redirigiendo para iniciar sesión...");
+    const isPopupBlockedOrClosed = 
+      error.code === 'auth/popup-blocked' || 
+      error.code === 'auth/popup-closed-by-user' || 
+      error.message?.includes('popup-blocked') ||
+      error.message?.includes('popup-closed-by-user');
+
+    if (isPopupBlockedOrClosed) {
+      toast.info("Redirigiendo para iniciar sesión con Google...");
       await signInWithRedirect(auth, googleProvider);
     } else {
       toast.error("Error al iniciar sesión: " + (error.message || error));
