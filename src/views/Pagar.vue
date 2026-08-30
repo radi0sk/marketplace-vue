@@ -7,6 +7,7 @@ import { db } from '@/services/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useToast } from "vue-toastification";
 import { useTikTok } from '@/composables/useTikTok';
+import { createPaggoLink } from '@/services/paggoService';
 
 const router = useRouter();
 const toast = useToast();
@@ -158,9 +159,27 @@ const finalizarCompra = async () => {
 
   isLoading.value = true;
   try {
-    // Basic order creation
     const orderId = Date.now().toString();
-    const orden = {
+    let paggoData: any = null;
+
+    if (metodoPago.value === 'tarjeta') {
+      try {
+        toast.info("Generando enlace de pago seguro con Paggo...");
+        paggoData = await createPaggoLink({
+          concept: `Pedido #${orderId} - Agro Guate`,
+          amount: totalFinal.value,
+          customerName: cliente.value.name || 'Cliente Agro Guate',
+          email: cliente.value.email || 'ventas@agroguate.shop'
+        });
+      } catch (paggoErr: any) {
+        console.error("Error al generar link en Paggo:", paggoErr);
+        toast.error("No se pudo generar el enlace de pago con tarjeta. Intenta nuevamente.");
+        isLoading.value = false;
+        return;
+      }
+    }
+
+    const orden: any = {
       id: orderId,
       fecha: new Date().toISOString(),
       cliente: cliente.value,
@@ -175,12 +194,26 @@ const finalizarCompra = async () => {
       estado: 'pendiente'
     };
 
+    if (paggoData) {
+      orden.paggoLink = paggoData.link;
+      orden.paggoExpirationDate = paggoData.expirationDate;
+    }
+
     await setDoc(doc(db, 'ordenes', orderId), orden);
     trackPurchase(orderId, totalFinal.value, cartStore.items);
+    cartStore.lastOrder = orden;
     cartStore.clearCart();
-    toast.success("¡Compra enviada con éxito!");
-    router.push({ name: 'Confirmacion', query: { orderId } });
+
+    if (paggoData?.link) {
+      toast.success("¡Pedido registrado! Redirigiendo a Paggo para completar tu pago...");
+      window.open(paggoData.link, '_blank');
+    } else {
+      toast.success("¡Compra enviada con éxito!");
+    }
+
+    router.push({ name: 'Confirmacion', query: { orderId, paggoLink: paggoData?.link || '' } });
   } catch (error) {
+    console.error("Error al procesar compra:", error);
     toast.error("Error al procesar compra");
   } finally {
     isLoading.value = false;
@@ -266,7 +299,23 @@ const finalizarCompra = async () => {
              <h2 class="text-xl font-bold text-slate-800">Método de Pago</h2>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+             <label :class="['p-6 rounded-3xl border-2 transition-all cursor-pointer flex flex-col gap-4', metodoPago === 'tarjeta' ? 'border-emerald-500 bg-emerald-50/40' : 'border-slate-100 bg-slate-50 hover:border-slate-200']">
+                <input type="radio" v-model="metodoPago" value="tarjeta" class="hidden" />
+                <div class="flex items-center justify-between">
+                   <div class="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-emerald-600">
+                      <font-awesome-icon icon="credit-card" />
+                   </div>
+                   <div v-if="metodoPago === 'tarjeta'" class="w-4 h-4 bg-emerald-600 rounded-full flex items-center justify-center">
+                      <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
+                   </div>
+                </div>
+                <div>
+                   <p class="font-bold text-slate-800">Tarjeta Crédito / Débito</p>
+                   <p class="text-[10px] text-emerald-600 font-black uppercase tracking-wider mt-1">Pago En Línea con Paggo 💳</p>
+                </div>
+             </label>
+
              <label :class="['p-6 rounded-3xl border-2 transition-all cursor-pointer flex flex-col gap-4', metodoPago === 'deposito' ? 'border-primary-500 bg-primary-50/30' : 'border-slate-100 bg-slate-50 hover:border-slate-200']">
                 <input type="radio" v-model="metodoPago" value="deposito" class="hidden" />
                 <div class="flex items-center justify-between">
@@ -298,6 +347,22 @@ const finalizarCompra = async () => {
                    <p class="text-[10px] text-primary-600 uppercase font-bold mt-1">+3% Recargo Adicional</p>
                 </div>
              </label>
+          </div>
+
+          <!-- Paggo Info Block -->
+          <div v-if="metodoPago === 'tarjeta'" class="animate-fade-in p-6 bg-emerald-50/80 rounded-3xl border border-emerald-100 space-y-3">
+             <div class="flex items-center gap-3 text-emerald-900 font-bold text-sm">
+                <div class="w-8 h-8 bg-emerald-600 text-white rounded-xl flex items-center justify-center">
+                   <font-awesome-icon icon="shield-alt" />
+                </div>
+                <div>
+                   <p>Pasarela de Pago Segura Paggo Guatemala</p>
+                   <p class="text-xs text-emerald-700 font-normal">Acepta Tarjetas Visa y Mastercard de cualquier banco</p>
+                </div>
+             </div>
+             <p class="text-xs text-slate-600 leading-relaxed pl-11">
+                Al hacer clic en <strong>"Realizar Pedido"</strong>, el sistema generará tu enlace de pago oficial en Paggo y serás redirigido para completar la transacción de forma inmediata y 100% segura.
+             </p>
           </div>
 
           <!-- Deposit Info -->

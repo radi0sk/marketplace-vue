@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { db } from '@/services/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -14,6 +14,7 @@ const cartStore = useCartStore();
 const toast = useToast();
 
 const orderId = (route.query.orderId as string) || 'Desconocido';
+const paggoLink = computed(() => (route.query.paggoLink as string) || cartStore.lastOrder?.paggoLink || null);
 const testimonialMessage = ref('');
 const submitting = ref(false);
 const submitted = ref(false);
@@ -72,6 +73,20 @@ const submitTestimonial = async () => {
     <div class="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm inline-block">
        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Número de Pedido</p>
        <h2 class="text-2xl font-bold text-primary-600 font-outfit">{{ orderId }}</h2>
+    </div>
+
+    <!-- Paggo Payment Card -->
+    <div v-if="paggoLink" class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-8 rounded-[40px] shadow-2xl space-y-4 max-w-lg mx-auto transform transition-all hover:scale-[1.02]">
+       <div class="flex items-center justify-center gap-3">
+          <font-awesome-icon icon="credit-card" class="text-3xl text-emerald-200" />
+          <h3 class="text-2xl font-black font-outfit">Completa tu Pago en Línea</h3>
+       </div>
+       <p class="text-xs text-emerald-100 font-medium leading-relaxed">
+          Tu enlace seguro de cobro con Paggo Guatemala ya está generado. Acepta Tarjetas Visa y Mastercard de cualquier banco.
+       </p>
+       <a :href="paggoLink" target="_blank" class="inline-flex items-center justify-center gap-3 w-full py-4 bg-white text-emerald-800 font-black rounded-2xl text-sm shadow-lg hover:bg-emerald-50 transition-all active:scale-95">
+          <font-awesome-icon icon="external-link-alt" /> Pagar Ahora con Paggo 💳
+       </a>
     </div>
 
     <!-- Testimonial Section -->

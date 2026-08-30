@@ -28,8 +28,19 @@
         </div>
         <div class="summary-item">
           <span class="label">Método de pago:</span>
-          <span class="value">{{ formatMetodoPago(orden.items[0]?.metodoPago) }}</span>
+          <span class="value">{{ formatMetodoPago(orden.metodoPago || orden.items[0]?.metodoPago) }}</span>
         </div>
+      </div>
+
+      <!-- Banner de Pago Paggo si aplica -->
+      <div v-if="orden.paggoLink" class="p-6 bg-emerald-50 rounded-2xl border border-emerald-200 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+         <div>
+            <h3 class="text-sm font-bold text-emerald-900">Enlace de Pago Paggo (Visa / Mastercard)</h3>
+            <p class="text-xs text-emerald-700">Puedes completar tu pago con tarjeta de crédito/débito de forma 100% segura.</p>
+         </div>
+         <a :href="orden.paggoLink" target="_blank" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md transition-all flex items-center gap-2 whitespace-nowrap">
+            <i class="fas fa-credit-card"></i> Pagar con Paggo 💳
+         </a>
       </div>
 
       <!-- Timeline de estados -->
@@ -258,7 +269,8 @@ export default {
       const metodos = {
         deposito: 'Depósito bancario',
         contraentrega: 'Pago contra entrega',
-        tarjeta: 'Tarjeta de crédito/débito'
+        'contra-entrega': 'Pago contra entrega',
+        tarjeta: 'Tarjeta de crédito/débito (Paggo 💳)'
       };
       return metodos[metodo] || metodo;
     },

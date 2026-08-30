@@ -40,6 +40,11 @@
         <div class="meta-section">
           <h3><i class="fas fa-money-bill-wave"></i> Información de Pago</h3>
           <p><strong>Método:</strong> {{ getPaymentMethodLabel(order.metodoPago) }}</p>
+          <p v-if="order.paggoLink"><strong>Enlace Paggo:</strong> 
+            <a :href="order.paggoLink" target="_blank" style="color: #059669; font-weight: bold; text-decoration: underline; margin-left: 4px;">
+              Abrir Enlace de Pago 💳
+            </a>
+          </p>
           <p><strong>Comprobante:</strong> 
             <a v-if="order.cliente.comprobante" :href="order.cliente.comprobante" target="_blank">
               Ver comprobante
@@ -259,7 +264,9 @@ export default {
       const methods = {
         deposito: 'Depósito bancario',
         efectivo: 'Efectivo',
-        tarjeta: 'Tarjeta de crédito/débito'
+        contraentrega: 'Pago contra entrega',
+        'contra-entrega': 'Pago contra entrega',
+        tarjeta: 'Tarjeta de crédito/débito (Paggo Guatemala 💳)'
       };
       return methods[method] || method;
     },
