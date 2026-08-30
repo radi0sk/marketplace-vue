@@ -176,7 +176,7 @@ const isPartner = computed(() => userData.value.role === 'admin' || userData.val
                 <i class="fas fa-user-plus mr-1"></i> Alta de Socio
               </button>
 
-              <router-link v-if="isPartner" to="/partner/dashboard" class="px-6 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold shadow-lg hover:bg-emerald-700 transition-all">
+              <router-link v-if="isPartner" to="/admin/products" class="px-6 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold shadow-lg hover:bg-emerald-700 transition-all">
                 <i class="fas fa-chart-line mr-2"></i> Mi Panel de Socio
               </router-link>
             </div>

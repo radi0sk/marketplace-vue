@@ -16,7 +16,7 @@ const navItems = computed(() => [
   { 
     name: authStore.isAdmin ? 'Admin' : (authStore.isPartner ? 'Socio' : 'Perfil'), 
     icon: authStore.isAdmin ? 'th-large' : (authStore.isPartner ? 'chart-line' : 'user'), 
-    path: authStore.isAdmin ? '/admin' : (authStore.isPartner ? '/partner/dashboard' : (authStore.isAuthenticated ? '/profile' : '/login')) 
+    path: authStore.isAdmin ? '/admin' : (authStore.isPartner ? '/admin/products' : (authStore.isAuthenticated ? '/profile' : '/login')) 
   }
 ]);
 
