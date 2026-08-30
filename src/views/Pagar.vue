@@ -64,6 +64,34 @@ const recargo = computed(() =>
 
 const totalFinal = computed(() => subtotal.value + gastosEnvio.value + recargo.value);
 
+const vendorBankAccounts = ref<any[]>([]);
+
+const loadVendorBankAccounts = async () => {
+  const vendorIds = [...new Set(cartStore.items.map(item => item.vendorId).filter((id): id is string => !!id))];
+  const accounts: any[] = [];
+
+  for (const vId of vendorIds) {
+    try {
+      const vSnap = await getDoc(doc(db, 'users', vId));
+      if (vSnap.exists()) {
+        const data = vSnap.data();
+        if (data.bankAccount && data.bankAccount.accountNumber) {
+          accounts.push({
+            vendorName: data.name || 'Socio Agro Guate',
+            bankName: data.bankAccount.bankName || 'Banco Industrial',
+            accountNumber: data.bankAccount.accountNumber,
+            accountType: data.bankAccount.accountType || 'Monetaria',
+            ownerName: data.bankAccount.ownerName || data.name
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Error loading vendor bank account:", err);
+    }
+  }
+  vendorBankAccounts.value = accounts;
+};
+
 // Initialization
 onMounted(async () => {
   if (!authStore.isAuthenticated) {
@@ -85,6 +113,8 @@ onMounted(async () => {
       }
     }
   }
+
+  await loadVendorBankAccounts();
 
   if (cartStore.items.length > 0) {
     trackInitiateCheckout(subtotal.value, cartStore.items);
@@ -272,22 +302,40 @@ const finalizarCompra = async () => {
 
           <!-- Deposit Info -->
           <div v-if="metodoPago === 'deposito'" class="animate-fade-in space-y-6">
-             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="p-4 bg-slate-900 rounded-2xl text-white">
-                   <p class="text-[10px] font-bold text-primary-400 uppercase mb-2">Banco Industrial</p>
-                   <p class="text-sm font-bold">CTA: 123-456789-0</p>
-                   <p class="text-[10px] text-slate-400">Mi Empresa S.A. | Monetaria</p>
+             <div v-if="vendorBankAccounts.length > 0" class="space-y-4">
+                <p class="text-xs font-black text-slate-600 uppercase tracking-widest">Cuentas Bancarias del Vendedor / Socio:</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div v-for="(acc, index) in vendorBankAccounts" :key="index" class="p-5 bg-slate-900 rounded-3xl text-white space-y-2 border border-slate-800 shadow-xl">
+                      <div class="flex items-center justify-between border-b border-white/10 pb-2">
+                         <span class="text-[10px] font-black uppercase tracking-widest text-primary-400">{{ acc.vendorName }}</span>
+                         <span class="bg-primary-500/20 text-primary-300 text-[10px] font-bold px-2.5 py-0.5 rounded-full">{{ acc.accountType }}</span>
+                      </div>
+                      <p class="text-xs font-bold text-slate-300">{{ acc.bankName }}</p>
+                      <p class="text-lg font-black text-amber-400 font-outfit">CTA: {{ acc.accountNumber }}</p>
+                      <p class="text-xs text-slate-400 font-medium">Titular: {{ acc.ownerName }}</p>
+                   </div>
                 </div>
-                <div class="p-4 bg-slate-900 rounded-2xl text-white">
-                   <p class="text-[10px] font-bold text-primary-400 uppercase mb-2">Banco G&T</p>
-                   <p class="text-sm font-bold">CTA: 987-654321-0</p>
-                   <p class="text-[10px] text-slate-400">Mi Empresa S.A. | Monetaria</p>
+             </div>
+
+             <div v-else class="space-y-4">
+                <p class="text-xs font-black text-slate-600 uppercase tracking-widest">Cuentas Bancarias Oficiales Agro Guate:</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div class="p-5 bg-slate-900 rounded-3xl text-white space-y-1">
+                      <p class="text-[10px] font-bold text-primary-400 uppercase">Banco Industrial</p>
+                      <p class="text-lg font-black text-amber-400 font-outfit">CTA: 123-456789-0</p>
+                      <p class="text-xs text-slate-400">Agro Guate S.A. | Monetaria</p>
+                   </div>
+                   <div class="p-5 bg-slate-900 rounded-3xl text-white space-y-1">
+                      <p class="text-[10px] font-bold text-primary-400 uppercase">Banco G&T Continental</p>
+                      <p class="text-lg font-black text-amber-400 font-outfit">CTA: 987-654321-0</p>
+                      <p class="text-xs text-slate-400">Agro Guate S.A. | Monetaria</p>
+                   </div>
                 </div>
              </div>
              
-             <div class="space-y-4">
-                <p class="text-xs font-bold text-slate-800">Sube tu comprobante:</p>
-                <input type="file" @change="handleFileUpload" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100" />
+             <div class="space-y-4 pt-2">
+                <p class="text-xs font-bold text-slate-800">Sube tu comprobante de depósito:</p>
+                <input type="file" @change="handleFileUpload" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-2xl file:border-0 file:text-xs file:font-bold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition-all cursor-pointer" />
              </div>
           </div>
         </section>
