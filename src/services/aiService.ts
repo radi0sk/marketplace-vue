@@ -1,9 +1,8 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { db } from "./firebase";
 import { collection, getDocs, limit, query } from "firebase/firestore";
 
-const API_KEY = (import.meta.env.VITE_GEMINI_API_KEY as string) || "AIzaSyCMyS9390mvyqD9wVckhST3BsMKrN1hHsw";
-const genAI = new GoogleGenerativeAI(API_KEY);
+const DEEPSEEK_API_KEY = (import.meta.env.VITE_DEEPSEEK_API_KEY as string) || "sk-8c4e8b33567f46bfa65b8045c1e530e9";
+const DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions";
 
 const SYSTEM_PROMPT = `
 Eres "AgroAsesor", el asistente virtual experto de Agro Guate, el marketplace agrícola líder en Guatemala. 
@@ -31,7 +30,6 @@ IMPORTANTE: Solo recomienda productos que estén en el catálogo que se te propo
 const generateLocalAgroResponse = (userMessage: string, products: any[]) => {
   const queryLower = userMessage.toLowerCase();
   
-  // Buscar productos coincidentes en el catálogo local
   const matchingProducts = products.filter(p => {
     const text = `${p.name} ${p.categoria || ''} ${p.description || ''}`.toLowerCase();
     const keywords = queryLower.split(' ').filter(k => k.length > 2);
@@ -51,7 +49,6 @@ const generateLocalAgroResponse = (userMessage: string, products: any[]) => {
     return resp;
   }
 
-  // Respuesta general agrícola si no hay coincidencia exacta de palabra clave
   if (products.length > 0) {
     const sample = products.slice(0, 2);
     let resp = `¡Bienvenido al campo con Agro Guate! En respuesta a tu duda sobre "${userMessage}", aquí tienes algunos de nuestros productos destacados para el sector agrícola:\n\n`;
@@ -88,28 +85,53 @@ export const chatWithAgroAsesor = async (userMessage: string, chatHistory: any[]
 
     const productCatalog = productsList.map(p => `- ${p.name}: Q${p.price} (ID: ${p.id}, Imagen: ${p.imageUrl}, Categoría: ${p.categoria})`).join("\n");
 
-    try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const formattedHistory = chatHistory.map(h => ({
+      role: h.role === 'model' ? 'assistant' : (h.role === 'user' ? 'user' : 'assistant'),
+      content: typeof h.parts?.[0]?.text === 'string' 
+        ? h.parts[0].text 
+        : (typeof h.content === 'string' ? h.content : JSON.stringify(h.content || ''))
+    }));
 
-      const chat = model.startChat({
-        history: [
-          {
-            role: "user",
-            parts: [{ text: SYSTEM_PROMPT + "\n\nCATÁLOGO DE PRODUCTOS ACTUAL:\n" + productCatalog }],
-          },
-          {
-            role: "model",
-            parts: [{ text: "Entendido. Soy AgroAsesor y estoy listo para ayudar a los productores guatemaltecos con el catálogo de Agro Guate." }],
-          },
-          ...chatHistory
-        ],
+    const messages = [
+      {
+        role: "system",
+        content: SYSTEM_PROMPT + "\n\nCATÁLOGO DE PRODUCTOS ACTUAL:\n" + productCatalog
+      },
+      ...formattedHistory,
+      {
+        role: "user",
+        content: userMessage
+      }
+    ];
+
+    try {
+      const response = await fetch(DEEPSEEK_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${DEEPSEEK_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: messages,
+          temperature: 0.7,
+          stream: false
+        })
       });
 
-      const result = await chat.sendMessage(userMessage);
-      const response = await result.response;
-      return response.text();
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `DeepSeek API HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const text = data.choices?.[0]?.message?.content;
+      if (text) {
+        return text;
+      }
+      throw new Error("Respuesta vacía de DeepSeek API");
     } catch (apiError: any) {
-      console.warn("AgroAsesor: Fallo en API Gemini (usando motor inteligente de catálogo local):", apiError?.message || apiError);
+      console.warn("AgroAsesor: Fallo en API DeepSeek (usando motor de catálogo local):", apiError?.message || apiError);
       return generateLocalAgroResponse(userMessage, productsList);
     }
   } catch (error) {
